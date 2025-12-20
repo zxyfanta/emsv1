@@ -12,7 +12,10 @@
       "Bash(taskkill:*)",
       "Bash(cmd:*)",
       "Bash(powershell:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(timeout:*)",
+      "Bash(mvn test-compile:*)",
+      "Bash(mvn test:*)"
     ]
   }
 }

@@ -80,6 +80,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         return path.startsWith("/api/auth/") ||
                path.startsWith("/h2-console") ||
                path.startsWith("/api/public/") ||
+               path.startsWith("/api/device-data/") ||  // 设备数据接收API免认证
                path.equals("/api/error") ||
                path.startsWith("/v3/api-docs") ||
                path.startsWith("/swagger-ui") ||

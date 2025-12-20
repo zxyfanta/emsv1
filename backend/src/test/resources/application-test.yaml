@@ -1,0 +1,41 @@
+spring:
+  # 数据库配置 - 使用H2内存数据库进行测试
+  datasource:
+    url: jdbc:h2:mem:ems-test-db;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  # JPA/Hibernate配置
+  jpa:
+    hibernate:
+      ddl-auto: create-drop  # 每次测试都重新创建表结构
+    show-sql: true  # 显示SQL语句
+    properties:
+      hibernate:
+        format_sql: true  # 格式化SQL输出
+        dialect: org.hibernate.dialect.H2Dialect
+
+  # H2控制台配置
+  h2:
+    console:
+      enabled: true
+      path: /h2-test-console
+
+# 日志配置
+logging:
+  level:
+    com.cdutetc.ems: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+# 测试特定配置
+ems:
+  data:
+    initialize: false  # 测试时不进行数据初始化，使用测试数据构建器
+  security:
+    jwt:
+      secret: test-jwt-secret-key-for-testing-only
+      expiration: 3600000  # 1小时
+      refresh-expiration: 7200000  # 2小时

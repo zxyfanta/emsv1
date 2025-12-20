@@ -114,11 +114,12 @@ public class SecurityConfig {
 
             // 配置请求授权
             .authorizeHttpRequests(auth -> auth
-                // 允许访问的端点
+                // 允许访问的端点 - 按优先级排序
+                .requestMatchers("/device-data/**").permitAll()  // 设备数据接收API免认证 (最优先)
+                .requestMatchers("/api/device-data/**").permitAll()  // 设备数据接收API免认证
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/h2-console/**").permitAll()
                 .requestMatchers("/api/public/**").permitAll()
-                .requestMatchers("/api/device-data/**").permitAll()  // 设备数据接收API免认证
                 .requestMatchers("/v3/api-docs/**").permitAll()
                 .requestMatchers("/swagger-ui/**").permitAll()
                 .requestMatchers("/swagger-resources/**").permitAll()
