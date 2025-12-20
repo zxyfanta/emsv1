@@ -2,7 +2,15 @@
   "permissions": {
     "allow": [
       "Bash(dir:*)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(mvn clean compile:*)",
+      "Bash(mvn spring-boot:stop:*)",
+      "Bash(mvn compile:*)",
+      "Bash(mvn spring-boot:run:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)",
+      "Bash(cmd:*)"
     ]
   }
 }

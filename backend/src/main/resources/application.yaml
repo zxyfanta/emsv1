@@ -1,3 +1,64 @@
 spring:
   application:
     name: ems
+
+  # 数据源配置
+  datasource:
+    url: jdbc:h2:mem:emsdb
+    driverClassName: org.h2.Driver
+    username: sa
+    password:
+
+  # H2数据库控制台配置
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+      settings:
+        web-allow-others: true
+
+  # JPA配置
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        use_sql_comments: true
+    open-in-view: false
+
+  # Jackson配置
+  jackson:
+    time-zone: GMT+8
+    date-format: yyyy-MM-dd HH:mm:ss
+    serialization:
+      write-dates-as-timestamps: false
+
+# 服务器配置
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
+# 日志配置
+logging:
+  level:
+    com.cdutetc.ems: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+# JWT配置
+jwt:
+  secret: ems-jwt-secret-key-2025
+  expiration: 86400000  # 24小时 (毫秒)
+
+# 应用配置
+app:
+  ems:
+    # 初始管理员配置
+    admin:
+      username: admin
+      password: admin123
+      email: admin@ems.com
