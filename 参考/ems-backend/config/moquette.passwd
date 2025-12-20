@@ -1,0 +1,13 @@
+##############################################
+# Moquette MQTT Broker Password File
+# EMS企业级MQTT设备管理云平台
+#
+# 格式：username:password
+# 开发环境可以为空或使用简单密码
+##############################################
+
+# 设备模拟器用户
+ems-device-simulator:device123
+
+# 后端服务用户
+ems-backend-server:backend123
