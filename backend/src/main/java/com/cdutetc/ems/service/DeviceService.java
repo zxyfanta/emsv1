@@ -153,6 +153,16 @@ public class DeviceService {
     }
 
     /**
+     * 根据设备编码获取设备（不限企业）
+     */
+    @Transactional(readOnly = true)
+    public Device findByDeviceCode(String deviceCode) {
+        log.debug("Getting device by code: {}", deviceCode);
+
+        return deviceRepository.findByDeviceCode(deviceCode).orElse(null);
+    }
+
+    /**
      * 根据设备编码获取设备
      */
     @Transactional(readOnly = true)

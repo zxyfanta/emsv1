@@ -1,6 +1,7 @@
 package com.cdutetc.ems.service.impl;
 
 import com.cdutetc.ems.entity.User;
+import com.cdutetc.ems.entity.enums.UserStatus;
 import com.cdutetc.ems.repository.UserRepository;
 import com.cdutetc.ems.service.UserService;
 import lombok.extern.slf4j.Slf4j;
@@ -142,7 +143,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void updateUserStatus(Long userId, User.UserStatus status) {
+    public void updateUserStatus(Long userId, UserStatus status) {
         log.debug("Updating status for user ID: {} to {}", userId, status);
 
         User user = findById(userId);

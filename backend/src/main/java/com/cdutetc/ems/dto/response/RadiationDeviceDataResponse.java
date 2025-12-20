@@ -22,8 +22,8 @@ public class RadiationDeviceDataResponse {
     private String rawData;
     private Integer src;
     private Integer msgtype;
-    private Integer CPM;
-    private Integer Batvolt;
+    private Double CPM;
+    private Double Batvolt;
     private String time;
     private Integer trigger;
     private Integer multi;

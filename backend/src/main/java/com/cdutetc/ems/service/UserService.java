@@ -1,6 +1,7 @@
 package com.cdutetc.ems.service;
 
 import com.cdutetc.ems.entity.User;
+import com.cdutetc.ems.entity.enums.UserStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -67,7 +68,7 @@ public interface UserService {
     /**
      * 更新用户状态
      */
-    void updateUserStatus(Long userId, User.UserStatus status);
+    void updateUserStatus(Long userId, UserStatus status);
 
     /**
      * 验证用户是否可以访问企业数据

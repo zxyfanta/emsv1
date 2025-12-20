@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
@@ -39,10 +40,10 @@ public class RadiationDeviceData extends BaseEntity {
     private Integer msgtype;
 
     @Column(name = "CPM")
-    private Integer cpm;
+    private Double cpm;
 
     @Column(name = "Batvolt")
-    private Integer batvolt;
+    private Double batvolt;
 
     @Column(name = "time", length = 20)
     private String time;

@@ -1,6 +1,8 @@
 package com.cdutetc.ems.repository;
 
 import com.cdutetc.ems.entity.User;
+import com.cdutetc.ems.entity.enums.UserRole;
+import com.cdutetc.ems.entity.enums.UserStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -51,18 +53,18 @@ public interface UserRepository extends JpaRepository<User, Long> {
     /**
      * 根据角色查找用户
      */
-    List<User> findByRole(User.UserRole role);
+    List<User> findByRole(UserRole role);
 
     /**
      * 根据状态查找用户
      */
-    List<User> findByStatus(User.UserStatus status);
+    List<User> findByStatus(UserStatus status);
 
     /**
      * 根据企业ID和状态查找用户
      */
     @Query("SELECT u FROM User u WHERE u.company.id = :companyId AND u.status = :status")
-    List<User> findByCompanyIdAndStatus(@Param("companyId") Long companyId, @Param("status") User.UserStatus status);
+    List<User> findByCompanyIdAndStatus(@Param("companyId") Long companyId, @Param("status") UserStatus status);
 
     /**
      * 根据用户名模糊查询

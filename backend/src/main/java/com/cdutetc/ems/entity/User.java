@@ -1,5 +1,7 @@
 package com.cdutetc.ems.entity;
 
+import com.cdutetc.ems.entity.enums.UserRole;
+import com.cdutetc.ems.entity.enums.UserStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -8,6 +10,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -85,21 +88,5 @@ public class User extends BaseEntity implements UserDetails {
     @Override
     public boolean isEnabled() {
         return UserStatus.ACTIVE.equals(status);
-    }
-
-    /**
-     * 用户角色枚举
-     */
-    public enum UserRole {
-        ADMIN,  // 管理员
-        USER    // 普通用户
-    }
-
-    /**
-     * 用户状态枚举
-     */
-    public enum UserStatus {
-        ACTIVE,     // 活跃
-        INACTIVE    // 非活跃
     }
 }

@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
@@ -36,7 +37,7 @@ public class EnvironmentDeviceData extends BaseEntity {
     private Integer src;
 
     @Column(name = "CPM")
-    private Integer cpm;
+    private Double cpm;
 
     @Column(name = "temperature")
     private Double temperature;

@@ -21,7 +21,7 @@ public class EnvironmentDeviceDataResponse {
     private String deviceCode;
     private String rawData;
     private Integer src;
-    private Integer CPM;
+    private Double CPM;
     private Double temperature;
     private Double wetness;
     private Double windspeed;

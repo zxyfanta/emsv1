@@ -16,7 +16,6 @@ import lombok.Builder;
  * 设备实体类
  */
 @Data
-@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
@@ -63,4 +62,19 @@ public class Device extends BaseEntity {
 
     @Column(name = "last_online_at")
     private java.time.LocalDateTime lastOnlineAt;
+
+    @Size(max = 100, message = "设备厂商长度不能超过100个字符")
+    @Column(name = "manufacturer", length = 100)
+    private String manufacturer;
+
+    @Size(max = 50, message = "设备型号长度不能超过50个字符")
+    @Column(name = "model", length = 50)
+    private String model;
+
+    @Size(max = 50, message = "设备序列号长度不能超过50个字符")
+    @Column(name = "serial_number", length = 50)
+    private String serialNumber;
+
+    @Column(name = "install_date")
+    private java.time.LocalDateTime installDate;
 }

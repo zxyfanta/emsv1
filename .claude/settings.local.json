@@ -11,7 +11,8 @@
       "Bash(findstr:*)",
       "Bash(taskkill:*)",
       "Bash(cmd:*)",
-      "Bash(powershell:*)"
+      "Bash(powershell:*)",
+      "Bash(curl:*)"
     ]
   }
 }

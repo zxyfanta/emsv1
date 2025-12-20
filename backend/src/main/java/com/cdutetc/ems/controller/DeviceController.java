@@ -46,13 +46,12 @@ public class DeviceController {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             User currentUser = (User) authentication.getPrincipal();
 
-            Device device = Device.builder()
-                    .deviceCode(request.getDeviceCode())
-                    .deviceName(request.getDeviceName())
-                    .deviceType(DeviceType.valueOf(request.getDeviceType()))
-                    .description(request.getDescription())
-                    .location(request.getLocation())
-                    .build();
+            Device device = new Device();
+            device.setDeviceCode(request.getDeviceCode());
+            device.setDeviceName(request.getDeviceName());
+            device.setDeviceType(DeviceType.valueOf(request.getDeviceType()));
+            device.setDescription(request.getDescription());
+            device.setLocation(request.getLocation());
 
             Device createdDevice = deviceService.createDevice(device, currentUser.getCompany().getId());
             DeviceResponse response = DeviceResponse.fromDevice(createdDevice);
@@ -111,11 +110,10 @@ public class DeviceController {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             User currentUser = (User) authentication.getPrincipal();
 
-            Device device = Device.builder()
-                    .deviceName(request.getDeviceName())
-                    .description(request.getDescription())
-                    .location(request.getLocation())
-                    .build();
+            Device device = new Device();
+            device.setDeviceName(request.getDeviceName());
+            device.setDescription(request.getDescription());
+            device.setLocation(request.getLocation());
 
             Device updatedDevice = deviceService.updateDevice(id, device, currentUser.getCompany().getId());
             DeviceResponse response = DeviceResponse.fromDevice(updatedDevice);

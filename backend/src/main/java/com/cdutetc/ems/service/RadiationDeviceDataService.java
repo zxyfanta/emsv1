@@ -30,6 +30,23 @@ public class RadiationDeviceDataService {
     private final DeviceRepository deviceRepository;
 
     /**
+     * 保存辐射监测数据（不限企业）
+     */
+    public RadiationDeviceData save(RadiationDeviceData data) {
+        log.debug("Saving radiation data for device: {}", data.getDeviceCode());
+
+        // 设置记录时间
+        if (data.getRecordTime() == null) {
+            data.setRecordTime(LocalDateTime.now());
+        }
+
+        RadiationDeviceData savedData = radiationDeviceDataRepository.save(data);
+        log.debug("Radiation data saved successfully with ID: {}", savedData.getId());
+
+        return savedData;
+    }
+
+    /**
      * 保存辐射监测数据
      */
     public RadiationDeviceData saveData(RadiationDeviceData data, Long companyId) {

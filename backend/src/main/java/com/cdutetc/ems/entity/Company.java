@@ -9,6 +9,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 
 /**
  * 企业实体类
@@ -47,6 +48,10 @@ public class Company extends BaseEntity {
     @Size(max = 255, message = "企业地址长度不能超过255个字符")
     @Column(name = "address", length = 255)
     private String address;
+
+    @Size(max = 500, message = "企业描述长度不能超过500个字符")
+    @Column(name = "description", length = 500)
+    private String description;
 
     @Column(name = "status", nullable = false)
     @Enumerated(EnumType.STRING)

@@ -31,6 +31,23 @@ public class EnvironmentDeviceDataService {
     private final DeviceRepository deviceRepository;
 
     /**
+     * 保存环境监测数据（不限企业）
+     */
+    public EnvironmentDeviceData save(EnvironmentDeviceData data) {
+        log.debug("Saving environment data for device: {}", data.getDeviceCode());
+
+        // 设置记录时间
+        if (data.getRecordTime() == null) {
+            data.setRecordTime(LocalDateTime.now());
+        }
+
+        EnvironmentDeviceData savedData = environmentDeviceDataRepository.save(data);
+        log.debug("Environment data saved successfully with ID: {}", savedData.getId());
+
+        return savedData;
+    }
+
+    /**
      * 保存环境监测数据
      */
     public EnvironmentDeviceData saveData(EnvironmentDeviceData data, Long companyId) {
