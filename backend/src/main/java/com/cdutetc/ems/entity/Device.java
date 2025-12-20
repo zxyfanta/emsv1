@@ -10,11 +10,13 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 
 /**
  * 设备实体类
  */
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
@@ -54,6 +56,10 @@ public class Device extends BaseEntity {
     @Size(max = 500, message = "设备描述长度不能超过500个字符")
     @Column(name = "description", length = 500)
     private String description;
+
+    @Size(max = 255, message = "设备位置长度不能超过255个字符")
+    @Column(name = "location", length = 255)
+    private String location;
 
     @Column(name = "last_online_at")
     private java.time.LocalDateTime lastOnlineAt;

@@ -169,4 +169,205 @@ public interface EnvironmentDeviceDataRepository extends JpaRepository<Environme
             @Param("deviceCode") String deviceCode,
             @Param("startTime") LocalDateTime startTime,
             @Param("endTime") LocalDateTime endTime);
+
+    // ===== 企业相关方法 =====
+
+    /**
+     * 根据企业ID分页查询数据
+     */
+    @Query("SELECT e FROM EnvironmentDeviceData e JOIN Device d ON e.deviceCode = d.deviceCode WHERE d.company.id = :companyId")
+    Page<EnvironmentDeviceData> findByCompanyId(@Param("companyId") Long companyId, Pageable pageable);
+
+    /**
+     * 根据设备编码按记录时间降序分页查询
+     */
+    Page<EnvironmentDeviceData> findByDeviceCodeOrderByRecordTimeDesc(String deviceCode, Pageable pageable);
+
+    /**
+     * 根据设备编码和时间范围按记录时间降序分页查询
+     */
+    Page<EnvironmentDeviceData> findByDeviceCodeAndRecordTimeBetweenOrderByRecordTimeDesc(
+            String deviceCode, LocalDateTime startTime, LocalDateTime endTime, Pageable pageable);
+
+    /**
+     * 根据企业ID和时间范围按记录时间降序分页查询
+     */
+    @Query("SELECT e FROM EnvironmentDeviceData e JOIN Device d ON e.deviceCode = d.deviceCode WHERE d.company.id = :companyId AND e.recordTime BETWEEN :startTime AND :endTime ORDER BY e.recordTime DESC")
+    Page<EnvironmentDeviceData> findByCompanyIdAndRecordTimeBetweenOrderByRecordTimeDesc(
+            @Param("companyId") Long companyId,
+            @Param("startTime") LocalDateTime startTime,
+            @Param("endTime") LocalDateTime endTime,
+            Pageable pageable);
+
+    /**
+     * 获取设备最新单条数据
+     */
+    @Query("SELECT e FROM EnvironmentDeviceData e WHERE e.deviceCode = :deviceCode ORDER BY e.recordTime DESC")
+    List<EnvironmentDeviceData> findTopByDeviceCodeOrderByRecordTimeDesc(@Param("deviceCode") String deviceCode);
+
+    /**
+     * 获取企业最新单条数据
+     */
+    @Query("SELECT e FROM EnvironmentDeviceData e JOIN Device d ON e.deviceCode = d.deviceCode WHERE d.company.id = :companyId ORDER BY e.recordTime DESC")
+    List<EnvironmentDeviceData> findTopByCompanyIdOrderByRecordTimeDesc(@Param("companyId") Long companyId);
+
+    /**
+     * 统计企业数据条数
+     */
+    @Query("SELECT COUNT(e) FROM EnvironmentDeviceData e JOIN Device d ON e.deviceCode = d.deviceCode WHERE d.company.id = :companyId")
+    long countByCompanyId(@Param("companyId") Long companyId);
+
+    /**
+     * 统计企业在指定时间范围内的数据条数
+     */
+    @Query("SELECT COUNT(e) FROM EnvironmentDeviceData e JOIN Device d ON e.deviceCode = d.deviceCode WHERE d.company.id = :companyId AND e.recordTime BETWEEN :startTime AND :endTime")
+    long countByCompanyIdAndRecordTimeBetween(@Param("companyId") Long companyId, @Param("startTime") LocalDateTime startTime, @Param("endTime") LocalDateTime endTime);
+
+    /**
+     * 统计企业不同设备数量
+     */
+    @Query("SELECT COUNT(DISTINCT e.deviceCode) FROM EnvironmentDeviceData e JOIN Device d ON e.deviceCode = d.deviceCode WHERE d.company.id = :companyId")
+    long countDistinctDeviceCodeByCompanyId(@Param("companyId") Long companyId);
+
+    // ===== CPM 统计方法 =====
+
+    /**
+     * 获取CPM统计信息（平均值、最小值、最大值）
+     */
+    @Query("SELECT AVG(e.cpm), MIN(e.cpm), MAX(e.cpm) FROM EnvironmentDeviceData e JOIN Device d ON e.deviceCode = d.deviceCode WHERE d.company.id = :companyId AND e.recordTime BETWEEN :startTime AND :endTime")
+    Object[] getCpmStatisticsByTimeRange(@Param("companyId") Long companyId, @Param("startTime") LocalDateTime startTime, @Param("endTime") LocalDateTime endTime);
+
+    /**
+     * 获取企业CPM统计信息
+     */
+    @Query("SELECT AVG(e.cpm), MIN(e.cpm), MAX(e.cpm) FROM EnvironmentDeviceData e JOIN Device d ON e.deviceCode = d.deviceCode WHERE d.company.id = :companyId")
+    Object[] getCpmStatistics(@Param("companyId") Long companyId);
+
+    /**
+     * 获取单个设备在指定时间范围内的CPM统计信息
+     */
+    @Query("SELECT AVG(e.cpm), MIN(e.cpm), MAX(e.cpm) FROM EnvironmentDeviceData e WHERE e.deviceCode = :deviceCode AND e.recordTime BETWEEN :startTime AND :endTime")
+    Object[] getCpmStatisticsByDeviceCodeAndTimeRange(@Param("deviceCode") String deviceCode, @Param("startTime") LocalDateTime startTime, @Param("endTime") LocalDateTime endTime);
+
+    /**
+     * 获取单个设备的CPM统计信息
+     */
+    @Query("SELECT AVG(e.cpm), MIN(e.cpm), MAX(e.cpm) FROM EnvironmentDeviceData e WHERE e.deviceCode = :deviceCode")
+    Object[] getCpmStatisticsByDeviceCode(@Param("deviceCode") String deviceCode);
+
+    // ===== 温度统计方法 =====
+
+    /**
+     * 获取温度统计信息（平均值、最小值、最大值）
+     */
+    @Query("SELECT AVG(e.temperature), MIN(e.temperature), MAX(e.temperature) FROM EnvironmentDeviceData e JOIN Device d ON e.deviceCode = d.deviceCode WHERE d.company.id = :companyId AND e.recordTime BETWEEN :startTime AND :endTime")
+    Object[] getTemperatureStatisticsByTimeRange(@Param("companyId") Long companyId, @Param("startTime") LocalDateTime startTime, @Param("endTime") LocalDateTime endTime);
+
+    /**
+     * 获取企业温度统计信息
+     */
+    @Query("SELECT AVG(e.temperature), MIN(e.temperature), MAX(e.temperature) FROM EnvironmentDeviceData e JOIN Device d ON e.deviceCode = d.deviceCode WHERE d.company.id = :companyId")
+    Object[] getTemperatureStatistics(@Param("companyId") Long companyId);
+
+    /**
+     * 获取单个设备在指定时间范围内的温度统计信息
+     */
+    @Query("SELECT AVG(e.temperature), MIN(e.temperature), MAX(e.temperature) FROM EnvironmentDeviceData e WHERE e.deviceCode = :deviceCode AND e.recordTime BETWEEN :startTime AND :endTime")
+    Object[] getTemperatureStatisticsByDeviceCodeAndTimeRange(@Param("deviceCode") String deviceCode, @Param("startTime") LocalDateTime startTime, @Param("endTime") LocalDateTime endTime);
+
+    /**
+     * 获取单个设备的温度统计信息
+     */
+    @Query("SELECT AVG(e.temperature), MIN(e.temperature), MAX(e.temperature) FROM EnvironmentDeviceData e WHERE e.deviceCode = :deviceCode")
+    Object[] getTemperatureStatisticsByDeviceCode(@Param("deviceCode") String deviceCode);
+
+    // ===== 湿度统计方法 =====
+
+    /**
+     * 获取湿度统计信息（平均值、最小值、最大值）
+     */
+    @Query("SELECT AVG(e.wetness), MIN(e.wetness), MAX(e.wetness) FROM EnvironmentDeviceData e JOIN Device d ON e.deviceCode = d.deviceCode WHERE d.company.id = :companyId AND e.recordTime BETWEEN :startTime AND :endTime")
+    Object[] getHumidityStatisticsByTimeRange(@Param("companyId") Long companyId, @Param("startTime") LocalDateTime startTime, @Param("endTime") LocalDateTime endTime);
+
+    /**
+     * 获取企业湿度统计信息
+     */
+    @Query("SELECT AVG(e.wetness), MIN(e.wetness), MAX(e.wetness) FROM EnvironmentDeviceData e JOIN Device d ON e.deviceCode = d.deviceCode WHERE d.company.id = :companyId")
+    Object[] getHumidityStatistics(@Param("companyId") Long companyId);
+
+    /**
+     * 获取单个设备在指定时间范围内的湿度统计信息
+     */
+    @Query("SELECT AVG(e.wetness), MIN(e.wetness), MAX(e.wetness) FROM EnvironmentDeviceData e WHERE e.deviceCode = :deviceCode AND e.recordTime BETWEEN :startTime AND :endTime")
+    Object[] getHumidityStatisticsByDeviceCodeAndTimeRange(@Param("deviceCode") String deviceCode, @Param("startTime") LocalDateTime startTime, @Param("endTime") LocalDateTime endTime);
+
+    /**
+     * 获取单个设备的湿度统计信息
+     */
+    @Query("SELECT AVG(e.wetness), MIN(e.wetness), MAX(e.wetness) FROM EnvironmentDeviceData e WHERE e.deviceCode = :deviceCode")
+    Object[] getHumidityStatisticsByDeviceCode(@Param("deviceCode") String deviceCode);
+
+    // ===== 风速统计方法 =====
+
+    /**
+     * 获取风速统计信息（平均值、最小值、最大值）
+     */
+    @Query("SELECT AVG(e.windspeed), MIN(e.windspeed), MAX(e.windspeed) FROM EnvironmentDeviceData e JOIN Device d ON e.deviceCode = d.deviceCode WHERE d.company.id = :companyId AND e.recordTime BETWEEN :startTime AND :endTime")
+    Object[] getWindSpeedStatisticsByTimeRange(@Param("companyId") Long companyId, @Param("startTime") LocalDateTime startTime, @Param("endTime") LocalDateTime endTime);
+
+    /**
+     * 获取企业风速统计信息
+     */
+    @Query("SELECT AVG(e.windspeed), MIN(e.windspeed), MAX(e.windspeed) FROM EnvironmentDeviceData e JOIN Device d ON e.deviceCode = d.deviceCode WHERE d.company.id = :companyId")
+    Object[] getWindSpeedStatistics(@Param("companyId") Long companyId);
+
+    /**
+     * 获取单个设备在指定时间范围内的风速统计信息
+     */
+    @Query("SELECT AVG(e.windspeed), MIN(e.windspeed), MAX(e.windspeed) FROM EnvironmentDeviceData e WHERE e.deviceCode = :deviceCode AND e.recordTime BETWEEN :startTime AND :endTime")
+    Object[] getWindSpeedStatisticsByDeviceCodeAndTimeRange(@Param("deviceCode") String deviceCode, @Param("startTime") LocalDateTime startTime, @Param("endTime") LocalDateTime endTime);
+
+    /**
+     * 获取单个设备的风速统计信息
+     */
+    @Query("SELECT AVG(e.windspeed), MIN(e.windspeed), MAX(e.windspeed) FROM EnvironmentDeviceData e WHERE e.deviceCode = :deviceCode")
+    Object[] getWindSpeedStatisticsByDeviceCode(@Param("deviceCode") String deviceCode);
+
+    // ===== 电池统计方法 =====
+
+    /**
+     * 获取电池统计信息（平均值、最小值、最大值）
+     */
+    @Query("SELECT AVG(e.battery), MIN(e.battery), MAX(e.battery) FROM EnvironmentDeviceData e JOIN Device d ON e.deviceCode = d.deviceCode WHERE d.company.id = :companyId AND e.recordTime BETWEEN :startTime AND :endTime")
+    Object[] getBatteryStatisticsByTimeRange(@Param("companyId") Long companyId, @Param("startTime") LocalDateTime startTime, @Param("endTime") LocalDateTime endTime);
+
+    /**
+     * 获取企业电池统计信息
+     */
+    @Query("SELECT AVG(e.battery), MIN(e.battery), MAX(e.battery) FROM EnvironmentDeviceData e JOIN Device d ON e.deviceCode = d.deviceCode WHERE d.company.id = :companyId")
+    Object[] getBatteryStatistics(@Param("companyId") Long companyId);
+
+    /**
+     * 获取单个设备在指定时间范围内的电池统计信息
+     */
+    @Query("SELECT AVG(e.battery), MIN(e.battery), MAX(e.battery) FROM EnvironmentDeviceData e WHERE e.deviceCode = :deviceCode AND e.recordTime BETWEEN :startTime AND :endTime")
+    Object[] getBatteryStatisticsByDeviceCodeAndTimeRange(@Param("deviceCode") String deviceCode, @Param("startTime") LocalDateTime startTime, @Param("endTime") LocalDateTime endTime);
+
+    /**
+     * 获取单个设备的电池统计信息
+     */
+    @Query("SELECT AVG(e.battery), MIN(e.battery), MAX(e.battery) FROM EnvironmentDeviceData e WHERE e.deviceCode = :deviceCode")
+    Object[] getBatteryStatisticsByDeviceCode(@Param("deviceCode") String deviceCode);
+
+    /**
+     * 统计单个设备在指定时间范围内的数据条数
+     */
+    @Query("SELECT COUNT(e) FROM EnvironmentDeviceData e WHERE e.deviceCode = :deviceCode AND e.recordTime BETWEEN :startTime AND :endTime")
+    long countByDeviceCodeAndRecordTimeBetween(@Param("deviceCode") String deviceCode, @Param("startTime") LocalDateTime startTime, @Param("endTime") LocalDateTime endTime);
+
+    /**
+     * 删除指定时间之前的数据
+     */
+    @Query("DELETE FROM EnvironmentDeviceData e WHERE e.recordTime < :dateTime AND e.deviceCode IN (SELECT d.deviceCode FROM Device d WHERE d.company.id = :companyId)")
+    long deleteByRecordTimeBeforeAndCompanyId(@Param("dateTime") LocalDateTime dateTime, @Param("companyId") Long companyId);
 }

@@ -6,6 +6,7 @@ import com.cdutetc.ems.dto.response.DeviceResponse;
 import com.cdutetc.ems.dto.response.PageResponse;
 import com.cdutetc.ems.entity.Device;
 import com.cdutetc.ems.entity.User;
+import com.cdutetc.ems.entity.enums.DeviceStatus;
 import com.cdutetc.ems.entity.enums.DeviceType;
 import com.cdutetc.ems.service.DeviceService;
 import com.cdutetc.ems.util.ApiResponse;
@@ -228,7 +229,7 @@ public class DeviceController {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             User currentUser = (User) authentication.getPrincipal();
 
-            Device.DeviceStatus deviceStatus = Device.DeviceStatus.valueOf(status.toUpperCase());
+            DeviceStatus deviceStatus = DeviceStatus.valueOf(status.toUpperCase());
             Device updatedDevice = deviceService.updateDeviceStatus(id, deviceStatus, currentUser.getCompany().getId());
             DeviceResponse response = DeviceResponse.fromDevice(updatedDevice);
 

@@ -35,7 +35,7 @@ public class EnvironmentDeviceDataResponse {
                 .deviceCode(data.getDeviceCode())
                 .rawData(data.getRawData())
                 .src(data.getSrc())
-                .CPM(data.getCPM())
+                .CPM(data.getCpm())
                 .temperature(data.getTemperature())
                 .wetness(data.getWetness())
                 .windspeed(data.getWindspeed())

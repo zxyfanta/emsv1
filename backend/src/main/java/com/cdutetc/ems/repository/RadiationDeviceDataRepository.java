@@ -130,4 +130,93 @@ public interface RadiationDeviceDataRepository extends JpaRepository<RadiationDe
             @Param("deviceCode") String deviceCode,
             @Param("startTime") LocalDateTime startTime,
             @Param("endTime") LocalDateTime endTime);
+
+    // ===== 企业相关方法 =====
+
+    /**
+     * 根据企业ID分页查询数据
+     */
+    @Query("SELECT r FROM RadiationDeviceData r JOIN Device d ON r.deviceCode = d.deviceCode WHERE d.company.id = :companyId")
+    Page<RadiationDeviceData> findByCompanyId(@Param("companyId") Long companyId, Pageable pageable);
+
+    /**
+     * 根据设备编码按记录时间降序分页查询
+     */
+    Page<RadiationDeviceData> findByDeviceCodeOrderByRecordTimeDesc(String deviceCode, Pageable pageable);
+
+    /**
+     * 获取设备最新单条数据
+     */
+    @Query("SELECT r FROM RadiationDeviceData r WHERE r.deviceCode = :deviceCode ORDER BY r.recordTime DESC")
+    List<RadiationDeviceData> findTopByDeviceCodeOrderByRecordTimeDesc(@Param("deviceCode") String deviceCode);
+
+    /**
+     * 获取企业最新单条数据
+     */
+    @Query("SELECT r FROM RadiationDeviceData r JOIN Device d ON r.deviceCode = d.deviceCode WHERE d.company.id = :companyId ORDER BY r.recordTime DESC")
+    List<RadiationDeviceData> findTopByCompanyIdOrderByRecordTimeDesc(@Param("companyId") Long companyId);
+
+    /**
+     * 根据企业ID和时间范围查询数据
+     */
+    @Query("SELECT r FROM RadiationDeviceData r JOIN Device d ON r.deviceCode = d.deviceCode WHERE d.company.id = :companyId AND r.recordTime BETWEEN :startTime AND :endTime ORDER BY r.recordTime DESC")
+    Page<RadiationDeviceData> findByCompanyIdAndRecordTimeBetweenOrderByRecordTimeDesc(
+            @Param("companyId") Long companyId,
+            @Param("startTime") LocalDateTime startTime,
+            @Param("endTime") LocalDateTime endTime,
+            Pageable pageable);
+
+    /**
+     * 统计企业数据条数
+     */
+    @Query("SELECT COUNT(r) FROM RadiationDeviceData r JOIN Device d ON r.deviceCode = d.deviceCode WHERE d.company.id = :companyId")
+    long countByCompanyId(@Param("companyId") Long companyId);
+
+    /**
+     * 统计企业在指定时间范围内的数据条数
+     */
+    @Query("SELECT COUNT(r) FROM RadiationDeviceData r JOIN Device d ON r.deviceCode = d.deviceCode WHERE d.company.id = :companyId AND r.recordTime BETWEEN :startTime AND :endTime")
+    long countByCompanyIdAndRecordTimeBetween(@Param("companyId") Long companyId, @Param("startTime") LocalDateTime startTime, @Param("endTime") LocalDateTime endTime);
+
+    /**
+     * 统计企业不同设备数量
+     */
+    @Query("SELECT COUNT(DISTINCT r.deviceCode) FROM RadiationDeviceData r JOIN Device d ON r.deviceCode = d.deviceCode WHERE d.company.id = :companyId")
+    long countDistinctDeviceCodeByCompanyId(@Param("companyId") Long companyId);
+
+    /**
+     * 获取CPM统计信息（平均值、最小值、最大值）
+     */
+    @Query("SELECT AVG(r.cpm), MIN(r.cpm), MAX(r.cpm) FROM RadiationDeviceData r JOIN Device d ON r.deviceCode = d.deviceCode WHERE d.company.id = :companyId AND r.recordTime BETWEEN :startTime AND :endTime")
+    Object[] getCpmStatisticsByTimeRange(@Param("companyId") Long companyId, @Param("startTime") LocalDateTime startTime, @Param("endTime") LocalDateTime endTime);
+
+    /**
+     * 获取企业CPM统计信息
+     */
+    @Query("SELECT AVG(r.cpm), MIN(r.cpm), MAX(r.cpm) FROM RadiationDeviceData r JOIN Device d ON r.deviceCode = d.deviceCode WHERE d.company.id = :companyId")
+    Object[] getCpmStatistics(@Param("companyId") Long companyId);
+
+    /**
+     * 获取单个设备在指定时间范围内的CPM统计信息
+     */
+    @Query("SELECT AVG(r.cpm), MIN(r.cpm), MAX(r.cpm) FROM RadiationDeviceData r WHERE r.deviceCode = :deviceCode AND r.recordTime BETWEEN :startTime AND :endTime")
+    Object[] getCpmStatisticsByDeviceCodeAndTimeRange(@Param("deviceCode") String deviceCode, @Param("startTime") LocalDateTime startTime, @Param("endTime") LocalDateTime endTime);
+
+    /**
+     * 获取单个设备的CPM统计信息
+     */
+    @Query("SELECT AVG(r.cpm), MIN(r.cpm), MAX(r.cpm) FROM RadiationDeviceData r WHERE r.deviceCode = :deviceCode")
+    Object[] getCpmStatisticsByDeviceCode(@Param("deviceCode") String deviceCode);
+
+    /**
+     * 统计单个设备在指定时间范围内的数据条数
+     */
+    @Query("SELECT COUNT(r) FROM RadiationDeviceData r WHERE r.deviceCode = :deviceCode AND r.recordTime BETWEEN :startTime AND :endTime")
+    long countByDeviceCodeAndRecordTimeBetween(@Param("deviceCode") String deviceCode, @Param("startTime") LocalDateTime startTime, @Param("endTime") LocalDateTime endTime);
+
+    /**
+     * 删除指定时间之前的数据
+     */
+    @Query("DELETE FROM RadiationDeviceData r WHERE r.recordTime < :dateTime AND r.deviceCode IN (SELECT d.deviceCode FROM Device d WHERE d.company.id = :companyId)")
+    long deleteByRecordTimeBeforeAndCompanyId(@Param("dateTime") LocalDateTime dateTime, @Param("companyId") Long companyId);
 }

@@ -126,4 +126,40 @@ public interface DeviceRepository extends JpaRepository<Device, Long> {
      */
     @Query("SELECT COUNT(d) FROM Device d WHERE d.company.id = :companyId AND d.status = 'ONLINE'")
     long countOnlineDevicesByCompany(@Param("companyId") Long companyId);
+
+    /**
+     * 根据企业ID和设备ID查找设备
+     */
+    @Query("SELECT d FROM Device d WHERE d.id = :id AND d.company.id = :companyId")
+    Optional<Device> findByIdAndCompanyId(@Param("id") Long id, @Param("companyId") Long companyId);
+
+    /**
+     * 根据企业ID和设备类型分页查询设备
+     */
+    @Query("SELECT d FROM Device d WHERE d.company.id = :companyId AND d.deviceType = :deviceType")
+    Page<Device> findByCompanyIdAndDeviceType(@Param("companyId") Long companyId, @Param("deviceType") DeviceType deviceType, Pageable pageable);
+
+    /**
+     * 根据企业ID和关键字搜索设备
+     */
+    @Query("SELECT d FROM Device d WHERE d.company.id = :companyId AND (d.deviceName LIKE %:keyword% OR d.deviceCode LIKE %:keyword% OR d.description LIKE %:keyword%)")
+    Page<Device> searchByCompanyIdAndKeyword(@Param("companyId") Long companyId, @Param("keyword") String keyword, Pageable pageable);
+
+    /**
+     * 根据设备编码和企业ID查找设备
+     */
+    @Query("SELECT d FROM Device d WHERE d.deviceCode = :deviceCode AND d.company.id = :companyId")
+    Optional<Device> findByDeviceCodeAndCompanyId(@Param("deviceCode") String deviceCode, @Param("companyId") Long companyId);
+
+    /**
+     * 检查设备编码在指定企业中是否存在
+     */
+    @Query("SELECT CASE WHEN COUNT(d) > 0 THEN true ELSE false END FROM Device d WHERE d.deviceCode = :deviceCode AND d.company.id = :companyId")
+    boolean existsByDeviceCodeAndCompanyId(@Param("deviceCode") String deviceCode, @Param("companyId") Long companyId);
+
+    /**
+     * 根据企业ID和设备状态统计设备数量
+     */
+    @Query("SELECT COUNT(d) FROM Device d WHERE d.company.id = :companyId AND d.status = :status")
+    long countByCompanyIdAndStatus(@Param("companyId") Long companyId, @Param("status") DeviceStatus status);
 }

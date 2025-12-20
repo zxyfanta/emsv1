@@ -44,7 +44,7 @@ public class RadiationDeviceDataResponse {
                 .rawData(data.getRawData())
                 .src(data.getSrc())
                 .msgtype(data.getMsgtype())
-                .CPM(data.getCPM())
+                .CPM(data.getCpm())
                 .Batvolt(data.getBatvolt())
                 .time(data.getTime())
                 .trigger(data.getTrigger())
