@@ -15,7 +15,12 @@
       "Bash(curl:*)",
       "Bash(timeout:*)",
       "Bash(mvn test-compile:*)",
-      "Bash(mvn test:*)"
+      "Bash(mvn test:*)",
+      "Bash(./mvnw clean package:*)",
+      "Bash(docker-compose down:*)",
+      "Bash(docker-compose:*)",
+      "Bash(mvn clean package:*)",
+      "Bash(docker logs:*)"
     ]
   }
 }

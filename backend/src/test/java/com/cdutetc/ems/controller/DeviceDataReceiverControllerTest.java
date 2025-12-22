@@ -26,16 +26,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class DeviceDataReceiverControllerTest extends BaseIntegrationTest {
 
     @Autowired
-    private MockMvc mockMvc;
-
-    @Autowired
     private CompanyRepository companyRepository;
 
     @Autowired
     private DeviceRepository deviceRepository;
-
-    @Autowired
-    private ObjectMapper objectMapper;
 
     private Company testCompany;
     private Device radiationDevice;
@@ -62,7 +56,7 @@ class DeviceDataReceiverControllerTest extends BaseIntegrationTest {
     void testReceiveRadiationData_Success() throws Exception {
         var request = TestDataBuilder.buildRadiationDataRequest(radiationDevice.getDeviceCode());
 
-        mockMvc.perform(post("/api/device-data/radiation")
+        mockMvc.perform(post("/device-data/radiation")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -81,7 +75,7 @@ class DeviceDataReceiverControllerTest extends BaseIntegrationTest {
     void testReceiveRadiationData_DeviceNotFound() throws Exception {
         var request = TestDataBuilder.buildRadiationDataRequest("NONEXISTENT-DEVICE");
 
-        mockMvc.perform(post("/api/device-data/radiation")
+        mockMvc.perform(post("/device-data/radiation")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
@@ -97,7 +91,7 @@ class DeviceDataReceiverControllerTest extends BaseIntegrationTest {
         var request = TestDataBuilder.buildRadiationDataRequest(radiationDevice.getDeviceCode());
         request.setDeviceCode(null); // 设备编码为空
 
-        mockMvc.perform(post("/api/device-data/radiation")
+        mockMvc.perform(post("/device-data/radiation")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
@@ -108,7 +102,7 @@ class DeviceDataReceiverControllerTest extends BaseIntegrationTest {
     void testReceiveEnvironmentData_Success() throws Exception {
         var request = TestDataBuilder.buildEnvironmentDataRequest(environmentDevice.getDeviceCode());
 
-        mockMvc.perform(post("/api/device-data/environment")
+        mockMvc.perform(post("/device-data/environment")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -127,7 +121,7 @@ class DeviceDataReceiverControllerTest extends BaseIntegrationTest {
     void testReceiveEnvironmentData_DeviceNotFound() throws Exception {
         var request = TestDataBuilder.buildEnvironmentDataRequest("NONEXISTENT-DEVICE");
 
-        mockMvc.perform(post("/api/device-data/environment")
+        mockMvc.perform(post("/device-data/environment")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
@@ -145,7 +139,7 @@ class DeviceDataReceiverControllerTest extends BaseIntegrationTest {
 
         var requests = java.util.List.of(request1, request2);
 
-        mockMvc.perform(post("/api/device-data/radiation/batch")
+        mockMvc.perform(post("/device-data/radiation/batch")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(requests)))
                 .andExpect(status().isOk())
@@ -164,7 +158,7 @@ class DeviceDataReceiverControllerTest extends BaseIntegrationTest {
 
         var requests = java.util.List.of(request1, request2);
 
-        mockMvc.perform(post("/api/device-data/environment/batch")
+        mockMvc.perform(post("/device-data/environment/batch")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(requests)))
                 .andExpect(status().isOk())
@@ -180,7 +174,7 @@ class DeviceDataReceiverControllerTest extends BaseIntegrationTest {
         // 验证设备数据接收API不需要JWT认证
         var request = TestDataBuilder.buildRadiationDataRequest(radiationDevice.getDeviceCode());
 
-        mockMvc.perform(post("/api/device-data/radiation")
+        mockMvc.perform(post("/device-data/radiation")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk()); // 应该成功访问，不需要认证

@@ -2,9 +2,9 @@ spring:
   application:
     name: ems
 
-  # 数据源配置
+  # 数据源配置 - 适配Docker环境
   datasource:
-    url: jdbc:h2:mem:emsdb
+    url: jdbc:h2:mem:ems-test-db;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
     driverClassName: org.h2.Driver
     username: sa
     password:
@@ -49,17 +49,28 @@ logging:
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
 
-# JWT配置
+# JWT配置 - 支持Docker环境变量覆盖
 jwt:
-  secret: ems-jwt-secret-key-2025
-  expiration: 86400000  # 24小时 (毫秒)
+  secret: ${EMS_SECURITY_JWT_SECRET:ems-jwt-secret-key-2025}
+  expiration: ${EMS_SECURITY_JWT_EXPIRATION:86400000}  # 24小时 (毫秒)
+
+# 管理端点配置
+management:
+  endpoints:
+    web:
+      base-path: /actuator
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
 
 # 应用配置
 app:
   ems:
-    # 数据初始化配置
+    # 数据初始化配置 - 支持Docker环境变量覆盖
     data:
-      initialize: true  # 是否启用数据初始化（生产环境应设为false）
+      initialize: ${EMS_DATA_INITIALIZE:true}  # 是否启用数据初始化（生产环境应设为false）
 
     # 初始管理员配置
     admin:

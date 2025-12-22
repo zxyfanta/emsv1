@@ -21,8 +21,8 @@ public class TestDataBuilder {
      */
     public static Company buildTestCompany() {
         Company company = new Company();
-        company.setId(1L);
-        company.setCompanyCode("TEST-COMPANY");
+        // 不设置ID，让数据库自动生成
+        company.setCompanyCode("TEST-COMPANY-" + System.currentTimeMillis());
         company.setCompanyName("测试企业");
         company.setContactEmail("test@example.com");
         company.setContactPhone("13800138000");
@@ -39,10 +39,10 @@ public class TestDataBuilder {
      */
     public static User buildTestUser(Long companyId, UserRole role) {
         User user = new User();
-        user.setId(1L);
-        user.setUsername("testuser");
+        // 不设置ID，让数据库自动生成
+        user.setUsername("testuser-" + System.currentTimeMillis());
         user.setFullName("测试用户");
-        user.setEmail("testuser@example.com");
+        user.setEmail("testuser-" + System.currentTimeMillis() + "@example.com");
         user.setPassword("$2a$10$encrypted.password.here");
         user.setRole(role);
         user.setStatus(UserStatus.ACTIVE);
@@ -73,7 +73,7 @@ public class TestDataBuilder {
      */
     public static Device buildTestDevice(Long companyId, DeviceType deviceType) {
         Device device = new Device();
-        device.setId(1L);
+        // 不设置ID，让数据库自动生成
         device.setDeviceCode("TEST-DEVICE-" + System.currentTimeMillis());
         device.setDeviceName("测试设备");
         device.setDeviceType(deviceType);

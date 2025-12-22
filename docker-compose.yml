@@ -1,0 +1,92 @@
+# EMS测试环境Docker配置 - 仅包含数据库和MQTT broker，供本地Spring Boot访问
+
+services:
+  # H2数据库服务器 - 独立运行供本地Spring Boot访问
+  h2-database:
+    image: buildo/h2database:latest
+    container_name: ems-h2-database
+    restart: unless-stopped
+    ports:
+      - "8082:8082"      # H2 Web控制台端口
+      - "9092:9092"      # H2 TCP端口
+    environment:
+      - H2_OPTIONS=-ifNotExists -tcp -tcpAllowOthers -web -webAllowOthers -webPort 8082 -tcpPort 9092
+    volumes:
+      - h2_data:/opt/h2-data
+    networks:
+      - ems-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8082 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 15s
+
+  # Mosquitto MQTT Broker
+  mosquitto:
+    image: eclipse-mosquitto:latest
+    container_name: ems-mosquitto
+    restart: unless-stopped
+    ports:
+      - "1883:1883"      # MQTT协议端口
+      - "9001:9001"      # WebSocket协议端口
+    volumes:
+      - mosquitto_data:/mosquitto/data
+      - mosquitto_log:/mosquitto/log
+      - ./mosquitto-config/config/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+    networks:
+      - ems-network
+    healthcheck:
+      test: ["CMD-SHELL", "mosquitto_pub -h localhost -t test -m 'health-check' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  # Node-RED - 设备模拟器
+  nodered:
+    image: nodered/node-red:latest
+    container_name: ems-nodered
+    restart: unless-stopped
+    ports:
+      - "1880:1880"
+    environment:
+      - NODE_RED_ENABLE_PROJECTS=false
+      - NODE_RED_NAME=EMS-Device-Simulator
+      - NODE_RED_LOG_LEVEL=info
+      - NODE_OPTIONS=--max-old-space-size=512
+    volumes:
+      - nodered_data:/data
+      # 使用本地Node-RED流配置
+      - ./nodered/flows/ems-device-test-corrected.json:/data/flows.json:ro
+    networks:
+      - ems-network
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:1880/"]
+      interval: 30s
+      timeout: 15s
+      retries: 5
+      start_period: 45s
+
+# 数据卷定义
+volumes:
+  h2_data:
+    driver: local
+  nodered_data:
+    driver: local
+  mosquitto_data:
+    driver: local
+  mosquitto_log:
+    driver: local
+
+# 网络定义
+networks:
+  ems-network:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.22.0.0/16

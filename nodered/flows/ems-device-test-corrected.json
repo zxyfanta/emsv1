@@ -1,0 +1,316 @@
+[
+    {
+        "id": "ems-device-test-corrected",
+        "type": "tab",
+        "label": "EMS设备测试 - 修正版本",
+        "disabled": false,
+        "info": "EMS设备模拟器 - 基于Node-RED 4.1.1正确配置的测试流"
+    },
+    {
+        "id": "mqtt-config-mosquitto",
+        "type": "mqtt-broker",
+        "name": "Mosquitto-Broker",
+        "broker": "mosquitto",
+        "port": "1883",
+        "clientid": "ems-device-tester",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "username": "",
+        "password": ""
+    },
+    {
+        "id": "inject-rad-001",
+        "type": "inject",
+        "z": "ems-device-test-corrected",
+        "name": "RAD-001已注册",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "30",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 2,
+        "topic": "ems/device/RAD-001/data/RADIATION",
+        "payload": "",
+        "payloadType": "date",
+        "x": 120,
+        "y": 80,
+        "wires": [
+            [
+                "function-rad-001"
+            ]
+        ]
+    },
+    {
+        "id": "function-rad-001",
+        "type": "function",
+        "z": "ems-device-test-corrected",
+        "name": "生成RAD-001数据",
+        "func": "// 生成RAD-001已注册辐射设备数据\nconst deviceId = 'RAD-001';\nconst timestamp = new Date(msg.payload);\nconst timeStr = timestamp.toISOString().replace('T', ' ').substring(0, 19);\n\n// 模拟真实的辐射数据变化\nconst baseCPM = 35;\nconst cpmVariation = Math.sin(Date.now() / 60000) * 15;\nconst cpm = Math.floor(baseCPM + cpmVariation + (Math.random() - 0.5) * 10);\n\n// 模拟电池电量缓慢下降\nconst batteryBase = 4000;\nconst batteryDrain = (Date.now() % 86400000) / 86400000 * 200;\nconst battery = Math.floor(batteryBase - batteryDrain + (Math.random() - 0.5) * 50);\n\nconst data = {\n    BDS: {\n        longitude: \"11607.4321\",\n        latitude: \"3998.7654\",\n        useful: 1,\n        UTC: timeStr\n    },\n    CPM: Math.max(10, Math.min(100, cpm)),\n    Batvolt: Math.max(3500, Math.min(4200, battery)),\n    signal: Math.floor(Math.random() * 2) + 3,\n    temperature: Math.round((20 + Math.sin(Date.now() / 300000) * 5 + (Math.random() - 0.5) * 2) * 10) / 10,\n    time: timeStr\n};\n\nreturn {\n    topic: `ems/device/${deviceId}/data/RADIATION`,\n    payload: data,\n    deviceId: deviceId,\n    deviceType: 'RADIATION',\n    registered: true,\n    timestamp: timeStr\n};",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 380,
+        "y": 80,
+        "wires": [
+            [
+                "mqtt-out",
+                "debug-rad-001"
+            ]
+        ]
+    },
+    {
+        "id": "inject-env-001",
+        "type": "inject",
+        "z": "ems-device-test-corrected",
+        "name": "ENV-001已注册",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "45",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 5,
+        "topic": "ems/device/ENV-001/data/ENVIRONMENT",
+        "payload": "",
+        "payloadType": "date",
+        "x": 120,
+        "y": 160,
+        "wires": [
+            [
+                "function-env-001"
+            ]
+        ]
+    },
+    {
+        "id": "function-env-001",
+        "type": "function",
+        "z": "ems-device-test-corrected",
+        "name": "生成ENV-001数据",
+        "func": "// 生成ENV-001已注册环境设备数据\nconst deviceId = 'ENV-001';\nconst timestamp = new Date(msg.payload);\nconst timeStr = timestamp.toISOString().replace('T', ' ').substring(0, 19);\nconst hour = timestamp.getHours();\n\n// 模拟环境数据变化\nconst baseTemp = 20;\nconst tempVariation = Math.sin((hour - 6) * Math.PI / 12) * 8;\nconst temperature = Math.round((baseTemp + tempVariation + (Math.random() - 0.5) * 3) * 10) / 10;\n\nconst baseHumidity = 60;\nconst humidityVariation = Math.cos((hour - 6) * Math.PI / 12) * 20;\nconst wetness = Math.round((baseHumidity + humidityVariation + (Math.random() - 0.5) * 10) * 10) / 10;\n\nconst windBase = 2 + Math.sin(Date.now() / 120000) * 1;\nconst windspeed = Math.round((windBase + (Math.random() - 0.5) * 2) * 10) / 10;\n\nconst data = {\n    src: 1,\n    CPM: Math.floor(Math.random() * 8) + 3,\n    temperature: Math.max(5, Math.min(40, temperature)),\n    wetness: Math.max(20, Math.min(90, wetness)),\n    windspeed: Math.max(0, Math.min(10, windspeed)),\n    total: Math.round((temperature * 2 + wetness * 0.5 + (100 - windspeed * 5)) * 10) / 10,\n    battery: Math.round((11.5 + (Math.random() - 0.5) * 1.5) * 10) / 10\n};\n\nreturn {\n    topic: `ems/device/${deviceId}/data/ENVIRONMENT`,\n    payload: data,\n    deviceId: deviceId,\n    deviceType: 'ENVIRONMENT',\n    registered: true,\n    timestamp: timeStr\n};",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 380,
+        "y": 160,
+        "wires": [
+            [
+                "mqtt-out",
+                "debug-env-001"
+            ]
+        ]
+    },
+    {
+        "id": "inject-rad-999",
+        "type": "inject",
+        "z": "ems-device-test-corrected",
+        "name": "RAD-999未注册",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "60",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 8,
+        "topic": "ems/device/RAD-999/data/RADIATION",
+        "payload": "",
+        "payloadType": "date",
+        "x": 120,
+        "y": 240,
+        "wires": [
+            [
+                "function-rad-999"
+            ]
+        ]
+    },
+    {
+        "id": "function-rad-999",
+        "type": "function",
+        "z": "ems-device-test-corrected",
+        "name": "生成RAD-999数据",
+        "func": "// 生成RAD-999未注册辐射设备数据\nconst deviceId = 'RAD-999';\nconst timestamp = new Date(msg.payload);\nconst timeStr = timestamp.toISOString().replace('T', ' ').substring(0, 19);\n\n// 模拟未注册设备的辐射数据\nconst data = {\n    BDS: {\n        longitude: \"11699.9999\",\n        latitude: \"3999.9999\",\n        useful: 1,\n        UTC: timeStr\n    },\n    CPM: Math.floor(Math.random() * 80) + 50,\n    Batvolt: Math.floor(Math.random() * 500) + 3500,\n    signal: Math.floor(Math.random() * 3) + 2,\n    temperature: Math.round((Math.random() * 25 + 10) * 10) / 10,\n    time: timeStr\n};\n\nreturn {\n    topic: `ems/device/${deviceId}/data/RADIATION`,\n    payload: data,\n    deviceId: deviceId,\n    deviceType: 'RADIATION',\n    registered: false,\n    timestamp: timeStr\n};",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 380,
+        "y": 240,
+        "wires": [
+            [
+                "mqtt-out",
+                "debug-rad-999"
+            ]
+        ]
+    },
+    {
+        "id": "inject-env-999",
+        "type": "inject",
+        "z": "ems-device-test-corrected",
+        "name": "ENV-999未注册",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "90",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 12,
+        "topic": "ems/device/ENV-999/data/ENVIRONMENT",
+        "payload": "",
+        "payloadType": "date",
+        "x": 120,
+        "y": 320,
+        "wires": [
+            [
+                "function-env-999"
+            ]
+        ]
+    },
+    {
+        "id": "function-env-999",
+        "type": "function",
+        "z": "ems-device-test-corrected",
+        "name": "生成ENV-999数据",
+        "func": "// 生成ENV-999未注册环境设备数据\nconst deviceId = 'ENV-999';\nconst timestamp = new Date(msg.payload);\nconst timeStr = timestamp.toISOString().replace('T', ' ').substring(0, 19);\n\n// 模拟未注册设备的环境数据\nconst data = {\n    src: 1,\n    CPM: Math.floor(Math.random() * 15) + 10,\n    temperature: Math.round((Math.random() * 30 + 5) * 10) / 10,\n    wetness: Math.round((Math.random() * 40 + 30) * 10) / 10,\n    windspeed: Math.round((Math.random() * 5 + 0.5) * 10) / 10,\n    total: Math.round((Math.random() * 80 + 80) * 10) / 10,\n    battery: Math.round((Math.random() * 3 + 9) * 10) / 10\n};\n\nreturn {\n    topic: `ems/device/${deviceId}/data/ENVIRONMENT`,\n    payload: data,\n    deviceId: deviceId,\n    deviceType: 'ENVIRONMENT',\n    registered: false,\n    timestamp: timeStr\n};",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 380,
+        "y": 320,
+        "wires": [
+            [
+                "mqtt-out",
+                "debug-env-999"
+            ]
+        ]
+    },
+    {
+        "id": "mqtt-out",
+        "type": "mqtt out",
+        "z": "ems-device-test-corrected",
+        "name": "发送到MQTT",
+        "topic": "",
+        "qos": "1",
+        "retain": "false",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "mqtt-config-mosquitto",
+        "x": 620,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "debug-rad-001",
+        "type": "debug",
+        "z": "ems-device-test-corrected",
+        "name": "RAD-001已注册",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 630,
+        "y": 60,
+        "wires": []
+    },
+    {
+        "id": "debug-env-001",
+        "type": "debug",
+        "z": "ems-device-test-corrected",
+        "name": "ENV-001已注册",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 630,
+        "y": 140,
+        "wires": []
+    },
+    {
+        "id": "debug-rad-999",
+        "type": "debug",
+        "z": "ems-device-test-corrected",
+        "name": "RAD-999未注册",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 630,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "debug-env-999",
+        "type": "debug",
+        "z": "ems-device-test-corrected",
+        "name": "ENV-999未注册",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 630,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "comment-test-info",
+        "type": "comment",
+        "z": "ems-device-test-corrected",
+        "name": "EMS设备测试场景\n\n✅ 已注册设备 (数据正常处理):\n- RAD-001: 辐射设备，每30秒\n- ENV-001: 环境设备，每45秒\n\n❌ 未注册设备 (数据应被拒绝):\n- RAD-999: 辐射设备，每60秒\n- ENV-999: 环境设备，每90秒\n\n🔍 验证要点:\n1. Node-RED调试面板查看数据流\n2. 后端日志查看设备认证结果\n3. 检查数据库存储情况\n4. 确认Redis设备注册状态",
+        "info": "",
+        "x": 100,
+        "y": 400,
+        "wires": []
+    }
+]

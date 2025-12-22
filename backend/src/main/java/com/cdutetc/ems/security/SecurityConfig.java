@@ -120,10 +120,13 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/h2-console/**").permitAll()
                 .requestMatchers("/api/public/**").permitAll()
+                .requestMatchers("/actuator/**").permitAll()  // 健康检查和监控端点免认证
                 .requestMatchers("/v3/api-docs/**").permitAll()
                 .requestMatchers("/swagger-ui/**").permitAll()
                 .requestMatchers("/swagger-resources/**").permitAll()
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                // 允许错误处理器访问
+                .requestMatchers("/error").permitAll()
 
                 // 管理员权限
                 .requestMatchers(HttpMethod.POST, "/api/companies").hasRole("ADMIN")

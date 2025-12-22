@@ -30,6 +30,12 @@ logging:
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
 
+# 服务器配置
+server:
+  port: 0  # 测试时使用随机端口
+  servlet:
+    context-path: /api  # 与主应用保持一致
+
 # 测试特定配置
 ems:
   data:
