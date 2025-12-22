@@ -53,7 +53,7 @@ public class DeviceDataReceiverController {
             if (device == null) {
                 log.warn("设备不存在: {}", request.getDeviceCode());
                 return ResponseEntity.badRequest()
-                        .body(ApiResponse.error("设备不存在: " + request.getDeviceCode()));
+                        .body(ApiResponse.badRequest("设备不存在: " + request.getDeviceCode()));
             }
 
             // 更新设备最后在线时间
@@ -119,7 +119,7 @@ public class DeviceDataReceiverController {
             if (device == null) {
                 log.warn("设备不存在: {}", request.getDeviceCode());
                 return ResponseEntity.badRequest()
-                        .body(ApiResponse.error("设备不存在: " + request.getDeviceCode()));
+                        .body(ApiResponse.badRequest("设备不存在: " + request.getDeviceCode()));
             }
 
             // 更新设备最后在线时间

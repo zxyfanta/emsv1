@@ -77,3 +77,19 @@ app:
       username: admin
       password: admin123
       email: admin@ems.com
+
+    # MQTT配置
+    mqtt:
+      host: ${EMS_MQTT_HOST:localhost}  # MQTT服务器地址，Docker环境下为mosquitto
+      port: ${EMS_MQTT_PORT:1883}       # MQTT服务器端口
+      client-id: ems-backend-server     # MQTT客户端ID
+      username: ${EMS_MQTT_USERNAME:}   # MQTT用户名（可选）
+      password: ${EMS_MQTT_PASSWORD:}   # MQTT密码（可选）
+      topic-prefix: ems                  # MQTT主题前缀
+      qos: 1                            # 服务质量等级
+      clean-session: true               # 清除会话
+      auto-reconnect: true              # 自动重连
+      connection-timeout: 30            # 连接超时时间（秒）
+      keep-alive-interval: 60           # 心跳间隔（秒）
+      # 自动注册设备的默认公司ID
+      default-company-id: ${EMS_DEFAULT_COMPANY_ID:1}

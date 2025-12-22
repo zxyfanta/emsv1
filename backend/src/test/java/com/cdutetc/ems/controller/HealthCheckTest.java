@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
 /**
  * 健康检查控制器测试
@@ -16,7 +17,9 @@ class HealthCheckTest extends BaseIntegrationTest {
     @DisplayName("健康检查 - 简单路径")
     void testSimpleHealthCheck() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.get("/device-data/health"))
-                .andExpect(status().isNotFound()); // 应该返回404，因为没有健康检查端点
+                .andExpect(status().isOk()) // 健康检查端点存在，应该返回200
+                .andExpect(jsonPath("$.status").value("UP"))
+                .andExpect(jsonPath("$.application").value("EMS Backend"));
     }
 
     @Test

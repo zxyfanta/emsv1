@@ -10,11 +10,17 @@ import com.cdutetc.ems.entity.enums.UserRole;
 import com.cdutetc.ems.entity.enums.UserStatus;
 
 import java.time.LocalDateTime;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * 测试数据构建器
  */
 public class TestDataBuilder {
+
+    // 使用原子计数器确保设备代码唯一性
+    private static final AtomicLong deviceCounter = new AtomicLong(0);
+    private static final AtomicLong userCounter = new AtomicLong(0);
+    private static final AtomicLong companyCounter = new AtomicLong(0);
 
     /**
      * 构建测试企业
@@ -22,7 +28,7 @@ public class TestDataBuilder {
     public static Company buildTestCompany() {
         Company company = new Company();
         // 不设置ID，让数据库自动生成
-        company.setCompanyCode("TEST-COMPANY-" + System.currentTimeMillis());
+        company.setCompanyCode("TEST-COMPANY-" + companyCounter.incrementAndGet());
         company.setCompanyName("测试企业");
         company.setContactEmail("test@example.com");
         company.setContactPhone("13800138000");
@@ -40,9 +46,10 @@ public class TestDataBuilder {
     public static User buildTestUser(Long companyId, UserRole role) {
         User user = new User();
         // 不设置ID，让数据库自动生成
-        user.setUsername("testuser-" + System.currentTimeMillis());
+        long userId = userCounter.incrementAndGet();
+        user.setUsername("testuser-" + userId);
         user.setFullName("测试用户");
-        user.setEmail("testuser-" + System.currentTimeMillis() + "@example.com");
+        user.setEmail("testuser-" + userId + "@example.com");
         user.setPassword("$2a$10$encrypted.password.here");
         user.setRole(role);
         user.setStatus(UserStatus.ACTIVE);
@@ -74,12 +81,13 @@ public class TestDataBuilder {
     public static Device buildTestDevice(Long companyId, DeviceType deviceType) {
         Device device = new Device();
         // 不设置ID，让数据库自动生成
-        device.setDeviceCode("TEST-DEVICE-" + System.currentTimeMillis());
+        long deviceId = deviceCounter.incrementAndGet();
+        device.setDeviceCode("TEST-DEVICE-" + deviceId);
         device.setDeviceName("测试设备");
         device.setDeviceType(deviceType);
         device.setManufacturer("测试厂商");
         device.setModel("测试型号");
-        device.setSerialNumber("TEST-SN-" + System.currentTimeMillis());
+        device.setSerialNumber("TEST-SN-" + deviceId);
         device.setDescription("测试设备描述");
         device.setLocation("测试位置");
         device.setStatus(DeviceStatus.OFFLINE);
