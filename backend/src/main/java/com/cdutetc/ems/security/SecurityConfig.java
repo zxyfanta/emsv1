@@ -116,10 +116,9 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // 允许访问的端点 - 按优先级排序
                 .requestMatchers("/device-data/**").permitAll()  // 设备数据接收API免认证 (最优先)
-                .requestMatchers("/api/device-data/**").permitAll()  // 设备数据接收API免认证
-                .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/auth/**").permitAll()  // 认证API免认证 (注意：context-path是/api，实际路径是/api/auth/**)
                 .requestMatchers("/h2-console/**").permitAll()
-                .requestMatchers("/api/public/**").permitAll()
+                .requestMatchers("/public/**").permitAll()
                 .requestMatchers("/actuator/**").permitAll()  // 健康检查和监控端点免认证
                 .requestMatchers("/v3/api-docs/**").permitAll()
                 .requestMatchers("/swagger-ui/**").permitAll()

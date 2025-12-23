@@ -51,7 +51,7 @@ logging:
 
 # JWT配置 - 支持Docker环境变量覆盖
 jwt:
-  secret: ${EMS_SECURITY_JWT_SECRET:ems-jwt-secret-key-2025}
+  secret: ${EMS_SECURITY_JWT_SECRET:ems-energy-management-system-jwt-secret-key-256-bits-2025 secure}
   expiration: ${EMS_SECURITY_JWT_EXPIRATION:86400000}  # 24小时 (毫秒)
 
 # 管理端点配置
