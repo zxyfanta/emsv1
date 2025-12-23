@@ -1,10 +1,12 @@
 package com.cdutetc.ems.integration;
 
 import com.cdutetc.ems.BaseIntegrationTest;
+import com.cdutetc.ems.entity.Company;
 import com.cdutetc.ems.entity.Device;
 import com.cdutetc.ems.entity.RadiationDeviceData;
 import com.cdutetc.ems.entity.EnvironmentDeviceData;
 import com.cdutetc.ems.entity.enums.DeviceType;
+import com.cdutetc.ems.repository.CompanyRepository;
 import com.cdutetc.ems.repository.RadiationDeviceDataRepository;
 import com.cdutetc.ems.repository.EnvironmentDeviceDataRepository;
 import com.cdutetc.ems.service.DeviceService;
@@ -15,10 +17,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
-
-import java.time.LocalDateTime;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -38,14 +36,24 @@ public class MqttIntegrationTest extends BaseIntegrationTest {
     @Autowired
     private EnvironmentDeviceDataRepository environmentDeviceDataRepository;
 
+    @Autowired
+    private CompanyRepository companyRepository;
+
     private static final String MQTT_BROKER = "tcp://localhost:1883";
     private static final String TEST_CLIENT_ID = "test-mqtt-client";
-    private static final int TIMEOUT_SECONDS = 15;
+    private static final int WAIT_MS = 3000; // 等待后端处理的时间
 
     private MqttClient mqttClient;
+    private Long defaultCompanyId;
 
     @BeforeEach
     void setUp() throws Exception {
+        // 获取默认公司ID
+        Company defaultCompany = companyRepository.findAll().stream()
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("测试环境中没有找到公司数据"));
+        defaultCompanyId = defaultCompany.getId();
+
         // 初始化测试MQTT客户端
         try {
             mqttClient = new MqttClient(MQTT_BROKER, TEST_CLIENT_ID + "-" + System.currentTimeMillis(),
@@ -70,36 +78,13 @@ public class MqttIntegrationTest extends BaseIntegrationTest {
         String topic = "ems/device/" + testDeviceCode + "/data/radiation";
         String testData = createRadiationDeviceTestData();
 
-        CountDownLatch messageReceivedLatch = new CountDownLatch(1);
-        mqttClient.setCallback(new MqttCallback() {
-            @Override
-            public void connectionLost(Throwable cause) {
-                fail("MQTT连接意外断开: " + cause.getMessage());
-            }
-
-            @Override
-            public void messageArrived(String topic, MqttMessage message) throws Exception {
-                // 确认收到消息
-                messageReceivedLatch.countDown();
-            }
-
-            @Override
-            public void deliveryComplete(IMqttDeliveryToken token) {
-                // 不需要处理
-            }
-        });
-
-        // 发送测试消息
+        // 发送测试消息（不需要订阅回调，只需等待后端处理）
         MqttMessage message = new MqttMessage(testData.getBytes());
         message.setQos(1);
         mqttClient.publish(topic, message);
 
-        // 等待消息处理完成
-        assertTrue(messageReceivedLatch.await(TIMEOUT_SECONDS, TimeUnit.SECONDS),
-                  "MQTT消息未在预期时间内被处理");
-
-        // 等待数据处理
-        Thread.sleep(2000);
+        // 等待后端MQTT监听器处理消息并保存数据
+        Thread.sleep(WAIT_MS);
 
         // 验证设备自动注册
         Device device = deviceService.findByDeviceCode(testDeviceCode);
@@ -125,35 +110,13 @@ public class MqttIntegrationTest extends BaseIntegrationTest {
         String topic = "ems/device/" + testDeviceCode + "/data/environment";
         String testData = createEnvironmentDeviceTestData();
 
-        CountDownLatch messageReceivedLatch = new CountDownLatch(1);
-        mqttClient.setCallback(new MqttCallback() {
-            @Override
-            public void connectionLost(Throwable cause) {
-                fail("MQTT连接意外断开: " + cause.getMessage());
-            }
-
-            @Override
-            public void messageArrived(String topic, MqttMessage message) throws Exception {
-                messageReceivedLatch.countDown();
-            }
-
-            @Override
-            public void deliveryComplete(IMqttDeliveryToken token) {
-                // 不需要处理
-            }
-        });
-
         // 发送测试消息
         MqttMessage message = new MqttMessage(testData.getBytes());
         message.setQos(1);
         mqttClient.publish(topic, message);
 
-        // 等待消息处理完成
-        assertTrue(messageReceivedLatch.await(TIMEOUT_SECONDS, TimeUnit.SECONDS),
-                  "MQTT消息未在预期时间内被处理");
-
-        // 等待数据处理
-        Thread.sleep(2000);
+        // 等待后端MQTT监听器处理消息并保存数据
+        Thread.sleep(WAIT_MS);
 
         // 验证设备自动注册
         Device device = deviceService.findByDeviceCode(testDeviceCode);
@@ -185,41 +148,20 @@ public class MqttIntegrationTest extends BaseIntegrationTest {
         existingDevice.setModel("测试型号");
         existingDevice.setLocation("测试位置");
 
-        Device savedDevice = deviceService.createDevice(existingDevice, 1L);
+        // 修复：使用动态获取的默认公司ID
+        Device savedDevice = deviceService.createDevice(existingDevice, defaultCompanyId);
         assertNotNull(savedDevice.getId(), "已存在设备创建失败");
 
         String topic = "ems/device/" + testDeviceCode + "/data/radiation";
         String testData = createRadiationDeviceTestData();
-
-        CountDownLatch messageReceivedLatch = new CountDownLatch(1);
-        mqttClient.setCallback(new MqttCallback() {
-            @Override
-            public void connectionLost(Throwable cause) {
-                fail("MQTT连接意外断开: " + cause.getMessage());
-            }
-
-            @Override
-            public void messageArrived(String topic, MqttMessage message) throws Exception {
-                messageReceivedLatch.countDown();
-            }
-
-            @Override
-            public void deliveryComplete(IMqttDeliveryToken token) {
-                // 不需要处理
-            }
-        });
 
         // 发送测试消息
         MqttMessage message = new MqttMessage(testData.getBytes());
         message.setQos(1);
         mqttClient.publish(topic, message);
 
-        // 等待消息处理完成
-        assertTrue(messageReceivedLatch.await(TIMEOUT_SECONDS, TimeUnit.SECONDS),
-                  "MQTT消息未在预期时间内被处理");
-
-        // 等待数据处理
-        Thread.sleep(2000);
+        // 等待后端MQTT监听器处理消息并保存数据
+        Thread.sleep(WAIT_MS);
 
         // 验证数据存储（不会创建新设备）
         Device device = deviceService.findByDeviceCode(testDeviceCode);
