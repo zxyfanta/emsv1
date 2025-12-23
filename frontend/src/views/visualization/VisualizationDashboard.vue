@@ -1,19 +1,27 @@
 <template>
-  <div
-    ref="dashboardRef"
-    class="visualization-dashboard"
-    :class="{ 'fullscreen': isFullscreen }"
-  >
+  <div ref="rootContainer" class="root-container">
+    <dv-full-screen-container>
+      <div
+        ref="dashboardRef"
+        class="visualization-dashboard"
+        :class="{ 'fullscreen': isFullscreen }"
+      >
     <!-- 顶部标题栏 -->
     <div class="header-title">
-      <Decoration8 :reverse="true" :color="['#00d4ff', '#0099ff']" style="width:300px; height:50px;" />
-      <div class="title-wrapper">
-        <div class="title-text">EMS设备可视化监控大屏</div>
-        <div class="title-decoration">
-          <Decoration10 :color="['#00d4ff', '#ff6b00']" style="width:200px; height:5px;" />
+      <!-- 左侧装饰 -->
+      <dv-decoration-8 :reverse="true" :color="['#1890ff', '#096dd9']" style="width:250px; height:40px;" />
+
+      <!-- 标题边框 -->
+      <dv-border-box-13 class="title-border-box" :color="['#1890ff', '#096dd9']">
+        <div class="title-wrapper">
+          <div class="title-text">EMS设备可视化监控大屏</div>
+          <!-- 标题下方装饰线 -->
+          <dv-decoration-10 :color="['#1890ff']" style="width:180px; height:3px; margin-top:4px;" />
         </div>
-      </div>
-      <Decoration8 :color="['#00d4ff', '#0099ff']" style="width:300px; height:50px;" />
+      </dv-border-box-13>
+
+      <!-- 右侧装饰 -->
+      <dv-decoration-8 :color="['#1890ff', '#096dd9']" style="width:250px; height:40px;" />
     </div>
 
     <!-- 全屏按钮 -->
@@ -27,11 +35,10 @@
     <div class="main-content">
       <!-- 左侧面板 -->
       <div class="left-panel">
-        <BorderBox8 :color="['#00d4ff', '#0099ff']" class="panel-container">
+        <dv-border-box-8 class="panel-container" :color="['#1890ff', '#096dd9']">
           <template #default>
             <div class="panel-header">
-              <Decoration3 :color="['#00d4ff', '#ff6b00']" style="width:100%; height:15px;" />
-              <span class="panel-title">设备统计</span>
+              <div class="panel-title">设备统计</div>
             </div>
             <LeftPanel
               :devices="devices"
@@ -39,43 +46,44 @@
               @device-click="handleDeviceClick"
             />
           </template>
-        </BorderBox8>
+        </dv-border-box-8>
       </div>
 
       <!-- 中间3D场景区 -->
       <div class="center-panel">
-        <BorderBox11 title="3D场景可视化" :title-width="200" :color="['#00d4ff', '#0099ff']" class="scene-container">
+        <dv-border-box-11 title="3D场景可视化" :title-width="200" :color="['#1890ff', '#096dd9']" class="scene-container">
           <div ref="canvasContainer" class="canvas-wrapper"></div>
+
           <!-- 场景内装饰 -->
           <div class="scene-decoration-top">
-            <Decoration2 :color="['#00d4ff', '#ff6b00']" style="width:90%; height:5px; margin:0 auto;" />
+            <dv-decoration-2 :color="['#1890ff']" style="width:90%; height:3px; margin:0 auto;" />
           </div>
           <div class="scene-decoration-bottom">
-            <Decoration10 :color="['#00d4ff', '#ff6b00']" style="width:80%; height:5px; margin:0 auto;" />
+            <dv-decoration-10 :color="['#1890ff']" style="width:80%; height:3px; margin:0 auto;" />
           </div>
+
           <!-- 场景角落装饰 -->
           <div class="corner-decoration top-left">
-            <Decoration12 :color="['#00d4ff', '#ff6b00']" style="width:40px; height:40px;" />
+            <dv-decoration-12 :color="['#1890ff']" style="width:35px; height:35px;" />
           </div>
           <div class="corner-decoration top-right">
-            <Decoration12 :color="['#00d4ff', '#ff6b00']" style="width:40px; height:40px;" />
+            <dv-decoration-12 :color="['#1890ff']" style="width:35px; height:35px;" />
           </div>
           <div class="corner-decoration bottom-left">
-            <Decoration12 :color="['#00d4ff', '#ff6b00']" style="width:40px; height:40px;" />
+            <dv-decoration-12 :color="['#1890ff']" style="width:35px; height:35px;" />
           </div>
           <div class="corner-decoration bottom-right">
-            <Decoration12 :color="['#00d4ff', '#ff6b00']" style="width:40px; height:40px;" />
+            <dv-decoration-12 :color="['#1890ff']" style="width:35px; height:35px;" />
           </div>
-        </BorderBox11>
+        </dv-border-box-11>
       </div>
 
       <!-- 右侧面板 -->
       <div class="right-panel">
-        <BorderBox8 :reverse="true" :color="['#00d4ff', '#0099ff']" class="panel-container">
+        <dv-border-box-8 :reverse="true" class="panel-container" :color="['#1890ff', '#096dd9']">
           <template #default>
             <div class="panel-header">
-              <Decoration3 :color="['#00d4ff', '#ff6b00']" style="width:100%; height:15px;" />
-              <span class="panel-title">设备列表</span>
+              <div class="panel-title">设备列表</div>
             </div>
             <RightPanel
               :devices="devices"
@@ -85,7 +93,7 @@
               @view-data="handleViewData"
             />
           </template>
-        </BorderBox8>
+        </dv-border-box-8>
       </div>
     </div>
 
@@ -99,14 +107,15 @@
       <DeviceDetailPanel v-if="selectedDevice" :device="selectedDevice" />
     </el-drawer>
   </div>
+  </dv-full-screen-container>
+  </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
-import screenfull from 'screenfull'
 import { useAppStore } from '@/store/app'
 // DataV组件已在main.js全局引入，无需按需引入
 import DeviceDetailPanel from '@/components/visualization/DeviceDetailPanel.vue'
@@ -117,11 +126,14 @@ import { ElMessage } from 'element-plus'
 
 const router = useRouter()
 const appStore = useAppStore()
+const rootContainer = ref(null) // 根容器，用于全屏
 const dashboardRef = ref(null)
 const canvasContainer = ref(null)
 const devices = ref([])
 const detailDrawer = ref(false)
 const selectedDevice = ref(null)
+
+// 使用 appStore 管理全屏状态
 const isFullscreen = computed(() => appStore.isFullscreen)
 
 let scene, camera, renderer, controls
@@ -139,25 +151,22 @@ const onlineCount = computed(() => {
   return devices.value.filter(d => d.status === 'ONLINE').length
 })
 
-// 切换全屏
+// 切换全屏（使用 appStore 管理专注模式）
 const toggleFullscreen = () => {
-  if (!screenfull.isEnabled) {
-    ElMessage.warning('当前浏览器不支持全屏功能')
-    return
-  }
-  screenfull.toggle()
-}
+  appStore.toggleFullscreen()
 
-// 监听全屏变化
-const onFullscreenChange = () => {
-  appStore.setFullscreen(screenfull.isFullscreen)
+  // 触发窗口resize事件，确保Three.js场景正确调整
+  setTimeout(() => {
+    window.dispatchEvent(new Event('resize'))
+  }, 100)
 }
 
 // 初始化Three.js场景
 const initScene = () => {
   // 创建场景
   scene = new THREE.Scene()
-  scene.background = new THREE.Color(0x0a0e1a)
+  // 使用渐变顶部的深蓝色，保持视觉统一
+  scene.background = new THREE.Color(0x0a192f)
 
   // 创建相机
   const width = canvasContainer.value.clientWidth
@@ -314,14 +323,35 @@ const handleViewData = (device) => {
   }
 }
 
-onMounted(() => {
-  initScene()
+onMounted(async () => {
+  // 立即加载设备数据，不依赖 canvasContainer 的就绪状态
   loadDevices()
-  renderer.domElement.addEventListener('click', onMouseClick)
-  // 监听全屏变化事件
-  if (screenfull.isEnabled) {
-    screenfull.on('change', onFullscreenChange)
+
+  // 等待 DOM 完全渲染（dv-full-screen-container 需要更多时间初始化）
+  await nextTick()
+  await nextTick() // 双重 nextTick 确保 DataV 容器初始化完成
+
+  // 3D 场景初始化需要等待容器就绪
+  const initSceneWhenReady = () => {
+    if (!canvasContainer.value) {
+      console.warn('[initScene] canvasContainer 未就绪，等待中...')
+      setTimeout(initSceneWhenReady, 200)
+      return
+    }
+
+    const { clientWidth, clientHeight } = canvasContainer.value
+    if (clientWidth === 0 || clientHeight === 0) {
+      console.warn('[initScene] 容器尺寸为 0，等待容器初始化...')
+      setTimeout(initSceneWhenReady, 200)
+      return
+    }
+
+    // 容器就绪，初始化场景
+    initScene()
+    renderer.domElement.addEventListener('click', onMouseClick)
   }
+
+  initSceneWhenReady()
 })
 
 onBeforeUnmount(() => {
@@ -329,49 +359,37 @@ onBeforeUnmount(() => {
     resizeObserver.disconnect()
   }
   renderer.domElement.removeEventListener('click', onMouseClick)
-  if (screenfull.isEnabled) {
-    screenfull.off('change', onFullscreenChange)
-  }
   cancelAnimationFrame(animationId)
 
   if (renderer) {
     renderer.dispose()
   }
 
-  // 重置全屏状态
-  appStore.setFullscreen(false)
-
-  // 如果仍在全屏模式，退出全屏
-  if (screenfull.isEnabled && screenfull.isFullscreen) {
-    screenfull.exit()
+  // 退出专注模式
+  if (appStore.isFullscreen) {
+    appStore.setFullscreen(false)
   }
 })
 </script>
 
 <style scoped>
-.visualization-dashboard {
+.root-container {
   width: 100%;
   height: 100vh;
+  overflow: hidden;
+}
+
+.visualization-dashboard {
+  width: 100%;
+  height: 100%; /* 改为 100%，适配 DataV 全屏容器 */
   display: flex;
   flex-direction: column;
-  background: linear-gradient(135deg, #0a0e1a 0%, #1a1f3a 100%);
+  /* 四段渐变深蓝背景：顶部科技蓝 → 中上高亮 → 中下科技蓝 → 底部深蓝（亮度提升） */
+  background: linear-gradient(180deg, #0d47a1 0%, #1565c0 40%, #0d47a1 70%, #072743 100%);
   padding: 16px;
   box-sizing: border-box;
   position: relative;
   overflow: hidden;
-}
-
-/* 全屏模式样式 */
-.visualization-dashboard.fullscreen {
-  padding: 8px;
-}
-
-.visualization-dashboard.fullscreen .header-title {
-  height: 50px;
-}
-
-.visualization-dashboard.fullscreen .title-text {
-  font-size: 24px;
 }
 
 .header-title {
@@ -394,15 +412,23 @@ onBeforeUnmount(() => {
 .title-text {
   font-size: 28px;
   font-weight: bold;
-  background: linear-gradient(90deg, #00d4ff 25%, #0099ff);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: #e8e8e8;
   letter-spacing: 4px;
 }
 
 .title-decoration {
   opacity: 0.8;
+}
+
+/* 顶部标题边框样式 */
+.title-border-box {
+  padding: 8px 30px;
+}
+
+:deep(.title-border-box .dv-border-box-content) {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 /* 全屏按钮 */
@@ -412,27 +438,21 @@ onBeforeUnmount(() => {
   right: 16px;
   width: 40px;
   height: 40px;
-  border-radius: 8px;
-  background: rgba(0, 212, 255, 0.1);
-  border: 1px solid rgba(0, 212, 255, 0.3);
+  border-radius: 6px;
+  background: rgba(24, 144, 255, 0.1);
+  border: 1px solid rgba(24, 144, 255, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.2s;
   z-index: 100;
-  color: #00d4ff;
+  color: #1890ff;
 }
 
 .fullscreen-btn:hover {
-  background: rgba(0, 212, 255, 0.2);
-  border-color: rgba(0, 212, 255, 0.5);
-  transform: scale(1.05);
-}
-
-.visualization-dashboard.fullscreen .fullscreen-btn {
-  top: 8px;
-  right: 8px;
+  background: rgba(24, 144, 255, 0.2);
+  border-color: rgba(24, 144, 255, 0.5);
 }
 
 .main-content {
@@ -441,12 +461,6 @@ onBeforeUnmount(() => {
   grid-template-columns: 320px 1fr 320px;
   gap: 16px;
   min-height: 0;
-}
-
-/* 全屏模式下的布局调整 */
-.visualization-dashboard.fullscreen .main-content {
-  gap: 12px;
-  grid-template-columns: 380px 1fr 380px;
 }
 
 .left-panel,
@@ -478,7 +492,7 @@ onBeforeUnmount(() => {
 .panel-title {
   font-size: 14px;
   font-weight: bold;
-  color: #42d392;
+  color: #e8e8e8;
   letter-spacing: 2px;
 }
 
@@ -502,6 +516,7 @@ onBeforeUnmount(() => {
   z-index: 1;
 }
 
+/* 场景装饰层 */
 .scene-decoration-top {
   position: absolute;
   top: 40px;
@@ -524,7 +539,7 @@ onBeforeUnmount(() => {
   position: absolute;
   z-index: 5;
   pointer-events: none;
-  opacity: 0.6;
+  opacity: 0.7;
 }
 
 .corner-decoration.top-left {
@@ -555,8 +570,4 @@ onBeforeUnmount(() => {
   position: relative !important;
 }
 
-/* 全屏模式下确保内容不被裁剪 */
-.visualization-dashboard.fullscreen :deep(.dv-border-box-content) {
-  overflow: hidden !important;
-}
 </style>

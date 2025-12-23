@@ -2,10 +2,7 @@
   <div class="right-panel-content">
     <!-- 设备筛选 -->
     <div class="filter-section">
-      <div class="section-title">
-        <Decoration3 :color="['#00d4ff', '#ff6b00']" style="width:100%; height:20px;" />
-        <span>设备列表</span>
-      </div>
+      <div class="section-title">设备列表</div>
       <div class="filter-buttons">
         <el-button
           :type="filterType === 'all' ? 'primary' : 'info'"
@@ -69,10 +66,7 @@
 
     <!-- 实时数据占位 -->
     <div class="realtime-section">
-      <div class="section-title">
-        <Decoration4 :color="['#00d4ff', '#ff6b00']" style="width:5px; height:20px;" />
-        <span>实时数据</span>
-      </div>
+      <div class="section-title">实时数据</div>
       <div class="realtime-placeholder">
         <div class="placeholder-text">点击设备查看实时数据</div>
       </div>
@@ -80,9 +74,7 @@
 
     <!-- 快捷操作 -->
     <div class="actions-section">
-      <div class="section-title">
-        <Decoration7 :color="['#00d4ff', '#ff6b00']" style="width:150px; height:30px;">快捷操作</Decoration7>
-      </div>
+      <div class="section-title">快捷操作</div>
       <div class="action-buttons">
         <el-button type="primary" size="small" @click="handleRefresh">
           刷新数据
@@ -151,13 +143,12 @@ const handleExport = () => {
 }
 
 .section-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
   margin-bottom: 12px;
   font-size: 14px;
-  font-weight: bold;
-  color: #fff;
+  font-weight: 500;
+  color: #e8e8e8;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(24, 144, 255, 0.2);
 }
 
 .filter-buttons {
@@ -191,13 +182,15 @@ const handleExport = () => {
 }
 
 .device-item.active {
-  background: rgba(0, 212, 255, 0.2);
-  border-left-color: #00d4ff;
+  background: rgba(24, 144, 255, 0.15);
+  border-left-color: #1890ff;
+  box-shadow: 0 0 10px rgba(24, 144, 255, 0.2);
 }
 
 .device-item.radiation.active {
-  background: rgba(255, 107, 0, 0.2);
-  border-left-color: #ff6b00;
+  background: rgba(24, 144, 255, 0.15);
+  border-left-color: #1890ff;
+  box-shadow: 0 0 10px rgba(24, 144, 255, 0.2);
 }
 
 .device-item.offline {
@@ -221,8 +214,8 @@ const handleExport = () => {
 }
 
 .status-dot.online {
-  background: #00d4ff;
-  box-shadow: 0 0 8px #00d4ff;
+  background: #52c41a;
+  box-shadow: 0 0 8px rgba(82, 196, 26, 0.4);
 }
 
 .device-info {

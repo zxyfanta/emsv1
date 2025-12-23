@@ -21,7 +21,16 @@
       "Bash(docker-compose:*)",
       "Bash(mvn clean package:*)",
       "Bash(docker logs:*)",
-      "Bash(mvn exec:java:*)"
+      "Bash(mvn exec:java:*)",
+      "Bash(python3:*)",
+      "Bash(lsof:*)",
+      "Bash(xargs kill:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(pkill:*)",
+      "Bash(git restore:*)",
+      "Bash(npm install:*)",
+      "Bash(cat:*)"
     ]
   }
 }

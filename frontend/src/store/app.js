@@ -18,6 +18,10 @@ export const useAppStore = defineStore('app', {
       this.sidebarCollapsed = !this.sidebarCollapsed
     },
 
+    toggleFullscreen() {
+      this.isFullscreen = !this.isFullscreen
+    },
+
     setLoading(loading) {
       this.isLoading = loading
     },

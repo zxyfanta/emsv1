@@ -2,7 +2,6 @@
   <div class="left-panel-content">
     <!-- 设备统计卡片 -->
     <div class="stats-section">
-      <Decoration1 :color="['#00d4ff', '#ff6b00']" style="width:100%; height:30px;" />
       <div class="stats-grid">
         <div class="stat-card">
           <div class="stat-label">总设备数</div>
@@ -25,28 +24,19 @@
 
     <!-- 设备类型分布 -->
     <div class="chart-section">
-      <div class="section-title">
-        <Decoration6 :color="['#00d4ff', '#0099ff']" style="width:100%; height:20px;" />
-        <span>设备类型分布</span>
-      </div>
+      <div class="section-title">设备类型分布</div>
       <div ref="typeChartRef" class="chart-container"></div>
     </div>
 
     <!-- 设备状态统计 -->
     <div class="chart-section">
-      <div class="section-title">
-        <Decoration6 :reverse="true" :color="['#00d4ff', '#0099ff']" style="width:100%; height:20px;" />
-        <span>设备状态统计</span>
-      </div>
+      <div class="section-title">设备状态统计</div>
       <div ref="statusChartRef" class="chart-container"></div>
     </div>
 
     <!-- 告警信息占位 -->
     <div class="alert-section">
-      <div class="section-title">
-        <Decoration5 :color="['#00d4ff', '#ff6b00']" style="width:100%; height:30px;" />
-        <span>告警信息</span>
-      </div>
+      <div class="section-title">告警信息</div>
       <div class="alert-list">
         <div class="alert-placeholder">暂无告警信息</div>
       </div>
@@ -99,22 +89,22 @@ const initTypeChart = () => {
     backgroundColor: 'transparent',
     tooltip: {
       trigger: 'item',
-      textStyle: { color: '#fff' }
+      textStyle: { color: '#e8e8e8' }
     },
     series: [{
       type: 'pie',
       radius: ['40%', '70%'],
       center: ['50%', '50%'],
       data: [
-        { value: radiationCount, name: '辐射设备', itemStyle: { color: '#ff6b00' } },
-        { value: environmentCount, name: '环境设备', itemStyle: { color: '#00d4ff' } }
+        { value: radiationCount, name: '辐射设备', itemStyle: { color: '#ff4d4f' } },
+        { value: environmentCount, name: '环境设备', itemStyle: { color: '#1890ff' } }
       ],
       label: {
-        color: '#fff',
+        color: '#e8e8e8',
         fontSize: 12
       },
       labelLine: {
-        lineStyle: { color: '#fff' }
+        lineStyle: { color: '#595959' }
       }
     }]
   }
@@ -148,7 +138,7 @@ const initStatusChart = () => {
     tooltip: {
       trigger: 'axis',
       axisPointer: { type: 'shadow' },
-      textStyle: { color: '#fff' }
+      textStyle: { color: '#e8e8e8' }
     },
     grid: {
       left: '10%',
@@ -159,14 +149,14 @@ const initStatusChart = () => {
     xAxis: {
       type: 'category',
       data: ['辐射设备', '环境设备'],
-      axisLabel: { color: '#fff' },
-      axisLine: { lineStyle: { color: '#333' } }
+      axisLabel: { color: '#8c8c8c' },
+      axisLine: { lineStyle: { color: '#434343' } }
     },
     yAxis: {
       type: 'value',
-      axisLabel: { color: '#fff' },
-      axisLine: { lineStyle: { color: '#333' } },
-      splitLine: { lineStyle: { color: '#333', type: 'dashed' } }
+      axisLabel: { color: '#8c8c8c' },
+      axisLine: { lineStyle: { color: '#434343' } },
+      splitLine: { lineStyle: { color: '#262626', type: 'dashed' } }
     },
     series: [
       {
@@ -174,18 +164,18 @@ const initStatusChart = () => {
         type: 'bar',
         stack: 'status',
         data: [radiationOnline, envOnline],
-        itemStyle: { color: '#00d4ff' }
+        itemStyle: { color: '#52c41a' }
       },
       {
         name: '离线',
         type: 'bar',
         stack: 'status',
         data: [radiationOffline, envOffline],
-        itemStyle: { color: '#666666' }
+        itemStyle: { color: '#8c8c8c' }
       }
     ],
     legend: {
-      textStyle: { color: '#fff' },
+      textStyle: { color: '#8c8c8c' },
       bottom: 0
     }
   }
@@ -259,11 +249,11 @@ watch(() => props.devices, () => {
 }
 
 .stat-value.located {
-  color: #00d4ff;
+  color: #1890ff;
 }
 
 .stat-value.online {
-  color: #00d4ff;
+  color: #1890ff;
 }
 
 .stat-value.offline {
@@ -278,13 +268,12 @@ watch(() => props.devices, () => {
 }
 
 .section-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
   margin-bottom: 12px;
   font-size: 14px;
-  font-weight: bold;
-  color: #fff;
+  font-weight: 500;
+  color: #e8e8e8;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(24, 144, 255, 0.2);
 }
 
 .chart-container {
