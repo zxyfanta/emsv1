@@ -35,13 +35,8 @@
 
       <el-table :data="tableData" v-loading="loading" stripe>
         <el-table-column prop="deviceCode" label="设备编码" width="120" />
-        <el-table-column prop="CPM" label="CPM值" width="100" />
-        <el-table-column prop="Batvolt" label="电池电压(mV)" width="120" />
-        <el-table-column prop="temperature" label="温度(°C)" width="100">
-          <template #default="{ row }">
-            {{ parseJsonData(row.rawData)?.temperature || '-' }}
-          </template>
-        </el-table-column>
+        <el-table-column prop="cpm" label="CPM值" width="100" />
+        <el-table-column prop="batvolt" label="电池电压(mV)" width="120" />
         <el-table-column prop="time" label="数据时间" width="180" />
         <el-table-column prop="recordTime" label="接收时间" width="180">
           <template #default="{ row }">

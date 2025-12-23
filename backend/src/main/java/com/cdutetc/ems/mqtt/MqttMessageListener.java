@@ -167,6 +167,7 @@ public class MqttMessageListener implements MqttCallback {
 
     /**
      * 处理辐射设备数据
+     * 原始JSON格式: {"src":1,"msgtype":1,"CPM":123,"Batvolt":3989,"time":"2025/01/15 14:30:45","trigger":1,"multi":1,"way":1}
      */
     private void handleRadiationData(Device device, String payload) {
         try {
@@ -178,15 +179,72 @@ public class MqttMessageListener implements MqttCallback {
             data.setRawData(payload);
             data.setRecordTime(LocalDateTime.now());
 
-            // 尝试解析JSON数据，如果失败则保存原始数据
+            // 解析JSON数据
             try {
-                // 这里可以添加JSON解析逻辑，暂时保存原始数据
-                // 实际项目中需要根据Node-RED发送的具体JSON格式进行解析
-                data.setSrc(1); // 默认值
-                data.setMsgtype(1); // 默认值
-                // 解析CPM、Batvolt等字段...
+                com.fasterxml.jackson.databind.JsonNode rootNode = objectMapper.readTree(payload);
+
+                // 解析基础字段 - 注意JSON字段名与entity属性名的对应关系
+                if (rootNode.has("src")) {
+                    data.setSrc(rootNode.get("src").asInt());
+                }
+                if (rootNode.has("msgtype")) {
+                    data.setMsgtype(rootNode.get("msgtype").asInt());
+                }
+                if (rootNode.has("CPM")) {
+                    data.setCpm(rootNode.get("CPM").asDouble());
+                }
+                if (rootNode.has("Batvolt")) {
+                    data.setBatvolt(rootNode.get("Batvolt").asDouble());
+                }
+                if (rootNode.has("time")) {
+                    data.setTime(rootNode.get("time").asText());
+                }
+                if (rootNode.has("trigger")) {
+                    data.setTrigger(rootNode.get("trigger").asInt());
+                }
+                if (rootNode.has("multi")) {
+                    data.setMulti(rootNode.get("multi").asInt());
+                }
+                if (rootNode.has("way")) {
+                    data.setWay(rootNode.get("way").asInt());
+                }
+
+                // 解析BDS定位信息
+                if (rootNode.has("BDS") && rootNode.get("BDS").isObject()) {
+                    com.fasterxml.jackson.databind.JsonNode bds = rootNode.get("BDS");
+                    if (bds.has("longitude")) {
+                        data.setBdsLongitude(bds.get("longitude").asText());
+                    }
+                    if (bds.has("latitude")) {
+                        data.setBdsLatitude(bds.get("latitude").asText());
+                    }
+                    if (bds.has("UTC")) {
+                        data.setBdsUtc(bds.get("UTC").asText());
+                    }
+                    if (bds.has("useful")) {
+                        data.setBdsUseful(bds.get("useful").asInt());
+                    }
+                }
+
+                // 解析LBS定位信息
+                if (rootNode.has("LBS") && rootNode.get("LBS").isObject()) {
+                    com.fasterxml.jackson.databind.JsonNode lbs = rootNode.get("LBS");
+                    if (lbs.has("longitude")) {
+                        data.setLbsLongitude(lbs.get("longitude").asText());
+                    }
+                    if (lbs.has("latitude")) {
+                        data.setLbsLatitude(lbs.get("latitude").asText());
+                    }
+                    if (lbs.has("useful")) {
+                        data.setLbsUseful(lbs.get("useful").asInt());
+                    }
+                }
+
+                log.debug("✅ 辐射数据解析成功: CPM={}, Batvolt={}, time={}",
+                    data.getCpm(), data.getBatvolt(), data.getTime());
+
             } catch (Exception e) {
-                log.warn("⚠️ 解析辐射设备数据JSON失败，保存原始数据: {}", e.getMessage());
+                log.warn("⚠️ 解析辐射设备数据JSON失败，仅保存原始数据: {}", e.getMessage());
             }
 
             // 保存数据
@@ -200,6 +258,7 @@ public class MqttMessageListener implements MqttCallback {
 
     /**
      * 处理环境设备数据
+     * 原始JSON格式: {"src":1,"CPM":4,"temperature":10,"wetness":95,"windspeed":0.2,"total":144.1,"battery":11.9}
      */
     private void handleEnvironmentData(Device device, String payload) {
         try {
@@ -211,13 +270,38 @@ public class MqttMessageListener implements MqttCallback {
             data.setRawData(payload);
             data.setRecordTime(LocalDateTime.now());
 
-            // 尝试解析JSON数据
+            // 解析JSON数据
             try {
-                // 这里可以添加JSON解析逻辑
-                data.setSrc(1); // 默认值
-                // 解析temperature、wetness等字段...
+                com.fasterxml.jackson.databind.JsonNode rootNode = objectMapper.readTree(payload);
+
+                // 解析基础字段 - 注意JSON字段名与entity属性名的对应关系
+                if (rootNode.has("src")) {
+                    data.setSrc(rootNode.get("src").asInt());
+                }
+                if (rootNode.has("CPM")) {
+                    data.setCpm(rootNode.get("CPM").asDouble());
+                }
+                if (rootNode.has("temperature")) {
+                    data.setTemperature(rootNode.get("temperature").asDouble());
+                }
+                if (rootNode.has("wetness")) {
+                    data.setWetness(rootNode.get("wetness").asDouble());
+                }
+                if (rootNode.has("windspeed")) {
+                    data.setWindspeed(rootNode.get("windspeed").asDouble());
+                }
+                if (rootNode.has("total")) {
+                    data.setTotal(rootNode.get("total").asDouble());
+                }
+                if (rootNode.has("battery")) {
+                    data.setBattery(rootNode.get("battery").asDouble());
+                }
+
+                log.debug("✅ 环境数据解析成功: CPM={}, temperature={}, wetness={}, battery={}",
+                    data.getCpm(), data.getTemperature(), data.getWetness(), data.getBattery());
+
             } catch (Exception e) {
-                log.warn("⚠️ 解析环境设备数据JSON失败，保存原始数据: {}", e.getMessage());
+                log.warn("⚠️ 解析环境设备数据JSON失败，仅保存原始数据: {}", e.getMessage());
             }
 
             // 保存数据
