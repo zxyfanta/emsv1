@@ -91,14 +91,14 @@ public class MqttConfig {
      * 获取辐射设备数据主题模式
      */
     public String getRadiationTopicPattern() {
-        return topicPrefix + "/device/+/data/radiation";
+        return topicPrefix + "/device/+/data/RADIATION";
     }
 
     /**
      * 获取环境设备数据主题模式
      */
     public String getEnvironmentTopicPattern() {
-        return topicPrefix + "/device/+/data/environment";
+        return topicPrefix + "/device/+/data/ENVIRONMENT";
     }
 
     /**

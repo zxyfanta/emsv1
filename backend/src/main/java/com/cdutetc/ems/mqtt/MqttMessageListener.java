@@ -53,9 +53,9 @@ public class MqttMessageListener implements MqttCallback {
             Device device = getOrCreateDevice(topicInfo.getDeviceCode(), topicInfo.getDeviceType());
 
             // 根据消息类型处理数据
-            if ("radiation".equals(topicInfo.getDeviceType())) {
+            if ("RADIATION".equalsIgnoreCase(topicInfo.getDeviceType())) {
                 handleRadiationData(device, payload);
-            } else if ("environment".equals(topicInfo.getDeviceType())) {
+            } else if ("ENVIRONMENT".equalsIgnoreCase(topicInfo.getDeviceType())) {
                 handleEnvironmentData(device, payload);
             } else {
                 log.warn("⚠️ 未知的设备类型: {}", topicInfo.getDeviceType());
@@ -115,7 +115,7 @@ public class MqttMessageListener implements MqttCallback {
                 log.info("🔧 设备不存在，自动注册: {}", deviceCode);
 
                 // 根据主题推断设备类型
-                DeviceType deviceType = "radiation".equals(deviceTypeStr)
+                DeviceType deviceType = "RADIATION".equalsIgnoreCase(deviceTypeStr)
                     ? DeviceType.RADIATION_MONITOR
                     : DeviceType.ENVIRONMENT_STATION;
 

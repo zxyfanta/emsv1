@@ -8,7 +8,7 @@ EMS (Energy Management System) is a Spring Boot-based application for monitoring
 
 ## Architecture
 
-- **Backend**: Spring Boot 3.5.0 with Java 17
+- **Backend**: Spring Boot 3.5.9 with Java 17
 - **Database**: H2 in-memory database (for development/testing)
 - **Security**: Spring Security with JWT authentication
 - **Documentation**: Swagger/OpenAPI 3
@@ -22,6 +22,7 @@ EMS (Energy Management System) is a Spring Boot-based application for monitoring
 - **User Management**: Role-based access control (ADMIN, USER)
 - **Company Management**: Multi-tenant company structure
 - **Authentication**: JWT-based stateless authentication
+- **MQTT Integration**: Eclipse Paho MQTT client for receiving device data via MQTT broker
 
 ## Development Commands
 
@@ -91,6 +92,7 @@ docker exec -it ems-nodered bash
 - `com.cdutetc.ems.entity`: Database entities
 - `com.cdutetc.ems.dto`: Data transfer objects (request/response)
 - `com.cdutetc.ems.security`: Security configuration and JWT handling
+- `com.cdutetc.ems.mqtt`: MQTT message listener and integration
 - `com.cdutetc.ems.exception`: Global exception handling
 - `com.cdutetc.ems.config`: Configuration classes
 
@@ -115,6 +117,17 @@ docker exec -it ems-nodered bash
 - JWT secret and expiration can be configured via environment variables:
   - `EMS_SECURITY_JWT_SECRET`: JWT signing secret
   - `EMS_SECURITY_JWT_EXPIRATION`: Token expiration time in milliseconds
+
+### MQTT Configuration
+
+- MQTT client settings can be configured via environment variables:
+  - `EMS_MQTT_HOST`: MQTT broker address (default: `localhost`)
+  - `EMS_MQTT_PORT`: MQTT broker port (default: `1883`)
+  - `EMS_MQTT_USERNAME`: MQTT username (optional)
+  - `EMS_MQTT_PASSWORD`: MQTT password (optional)
+  - `EMS_DEFAULT_COMPANY_ID`: Default company ID for auto-registered devices (default: `1`)
+- Topic prefix: `ems`
+- QoS level: 1
 
 ### Database Configuration
 
@@ -142,8 +155,8 @@ docker exec -it ems-nodered bash
 
 ### Test Data Management
 
-- Uses `TestDataBuilder` for creating consistent test data
-- `BaseIntegrationTest` provides common test configuration
+- `com.cdutetc.ems.util.TestDataBuilder`: Utility for creating consistent test data
+- `BaseIntegrationTest`: Provides common test configuration
 - Database is reset between tests (`create-drop`)
 
 ### Test Categories
@@ -154,11 +167,23 @@ docker exec -it ems-nodered bash
 
 ## Device Data Flow
 
+### REST API Data Flow
+
 1. **Device Registration**: Devices must be registered via API before data submission
 2. **Data Reception**: Raw device data submitted to `/api/device-data/*` endpoints
 3. **Data Processing**: System validates and processes incoming data
 4. **Data Storage**: Validated data stored in appropriate entity tables
 5. **Error Handling**: Invalid data from unregistered devices is rejected
+
+### MQTT Data Flow
+
+1. **MQTT Connection**: Backend connects to Mosquitto MQTT broker on startup
+2. **Topic Subscription**: Subscribes to `ems/device/+/data/+` pattern topics
+3. **Message Reception**: Receives device data via MQTT topics:
+   - `ems/device/{deviceId}/data/RADIATION` for radiation devices
+   - `ems/device/{deviceId}/data/ENVIRONMENT` for environmental devices
+4. **Auto-Registration**: Unregistered devices are automatically registered to default company
+5. **Data Processing**: Same validation and storage logic as REST API
 
 ## Docker Services
 
@@ -188,7 +213,10 @@ docker exec -it ems-nodered bash
 
 The application supports Docker environment variable overrides for:
 - Database configuration
-- JWT settings
+- JWT settings (`EMS_SECURITY_JWT_SECRET`, `EMS_SECURITY_JWT_EXPIRATION`)
+- MQTT settings (`EMS_MQTT_HOST`, `EMS_MQTT_PORT`, `EMS_MQTT_USERNAME`, `EMS_MQTT_PASSWORD`)
+- Default company ID (`EMS_DEFAULT_COMPANY_ID`)
+- Data initialization (`EMS_DATA_INITIALIZE`)
 - Server port and context path
 - Management endpoints
 
@@ -203,7 +231,12 @@ The application supports Docker environment variable overrides for:
 
 ### Common Issues
 
-- **Port Conflicts**: Ensure ports 8081, 1880, 1883 are available
-- **Database Issues**: H2 console available for database inspection
+- **Port Conflicts**: Ensure ports 8081 (API), 1880 (Node-RED), 1883 (MQTT) are available
+- **Database Issues**: H2 console available for database inspection at http://localhost:8081/api/h2-console
 - **Authentication**: Check JWT configuration and token expiration
-- **Device Data**: Verify device registration before data submission
+- **Device Data (REST)**: Verify device registration before data submission
+- **Device Data (MQTT)**:
+  - Ensure Mosquitto broker is running: `docker-compose logs mosquitto`
+  - Check MQTT connection in backend logs for connection errors
+  - Verify topic format: `ems/device/{deviceId}/data/{TYPE}`
+  - Unregistered devices are auto-registered to default company (ID: 1)

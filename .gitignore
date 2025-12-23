@@ -1,0 +1,63 @@
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+
+# Eclipse
+.classpath
+.project
+.settings/
+bin/
+
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+
+# Log files
+*.log
+logs/
+
+# H2 Database
+*.db
+*.trace.db
+
+# Docker volumes
+docker-compose.override.yml
+
+# 临时文件和目录
+temp/
+tmp/
+*.tmp
+*.bak
+*.swp
+*~
+
+# 测试覆盖率
+.coverage
+coverage/
