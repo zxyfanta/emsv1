@@ -52,6 +52,30 @@
           />
         </el-form-item>
 
+        <el-divider content-position="left">可视化大屏位置</el-divider>
+
+        <el-form-item label="X坐标 (0-100)" prop="positionX">
+          <el-slider
+            v-model="form.positionX"
+            :min="0"
+            :max="100"
+            :step="1"
+            show-input
+            :marks="{ 0: '左', 50: '中', 100: '右' }"
+          />
+        </el-form-item>
+
+        <el-form-item label="Y坐标 (0-100)" prop="positionY">
+          <el-slider
+            v-model="form.positionY"
+            :min="0"
+            :max="100"
+            :step="1"
+            show-input
+            :marks="{ 0: '下', 50: '中', 100: '上' }"
+          />
+        </el-form-item>
+
         <el-form-item>
           <el-button type="primary" @click="handleSubmit" :loading="submitting">
             保存
@@ -87,7 +111,9 @@ const form = reactive({
   deviceName: '',
   deviceType: '',
   location: '',
-  description: ''
+  description: '',
+  positionX: null,
+  positionY: null
 })
 
 const rules = {

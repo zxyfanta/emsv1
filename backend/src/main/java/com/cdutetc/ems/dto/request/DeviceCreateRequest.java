@@ -1,6 +1,8 @@
 package com.cdutetc.ems.dto.request;
 
 import com.cdutetc.ems.entity.enums.DeviceType;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -28,4 +30,20 @@ public class DeviceCreateRequest {
 
     @Size(max = 255, message = "设备位置长度不能超过255个字符")
     private String location;
+
+    /**
+     * 可视化大屏X坐标位置
+     * 范围：0-100，相对于大屏中心模型的水平位置
+     */
+    @Min(value = 0, message = "X坐标不能小于0")
+    @Max(value = 100, message = "X坐标不能大于100")
+    private Integer positionX;
+
+    /**
+     * 可视化大屏Y坐标位置
+     * 范围：0-100，相对于大屏中心模型的垂直位置
+     */
+    @Min(value = 0, message = "Y坐标不能小于0")
+    @Max(value = 100, message = "Y坐标不能大于100")
+    private Integer positionY;
 }

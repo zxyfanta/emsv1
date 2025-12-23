@@ -10,7 +10,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 
 /**
  * 设备实体类
@@ -77,4 +76,18 @@ public class Device extends BaseEntity {
 
     @Column(name = "install_date")
     private java.time.LocalDateTime installDate;
+
+    /**
+     * 可视化大屏X坐标位置
+     * 范围：0-100，相对于大屏中心模型的水平位置
+     */
+    @Column(name = "position_x")
+    private Integer positionX;
+
+    /**
+     * 可视化大屏Y坐标位置
+     * 范围：0-100，相对于大屏中心模型的垂直位置
+     */
+    @Column(name = "position_y")
+    private Integer positionY;
 }

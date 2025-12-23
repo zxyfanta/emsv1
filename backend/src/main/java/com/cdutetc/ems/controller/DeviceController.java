@@ -52,6 +52,8 @@ public class DeviceController {
             device.setDeviceType(DeviceType.valueOf(request.getDeviceType()));
             device.setDescription(request.getDescription());
             device.setLocation(request.getLocation());
+            device.setPositionX(request.getPositionX());
+            device.setPositionY(request.getPositionY());
 
             Device createdDevice = deviceService.createDevice(device, currentUser.getCompany().getId());
             DeviceResponse response = DeviceResponse.fromDevice(createdDevice);
@@ -114,6 +116,8 @@ public class DeviceController {
             device.setDeviceName(request.getDeviceName());
             device.setDescription(request.getDescription());
             device.setLocation(request.getLocation());
+            device.setPositionX(request.getPositionX());
+            device.setPositionY(request.getPositionY());
 
             Device updatedDevice = deviceService.updateDevice(id, device, currentUser.getCompany().getId());
             DeviceResponse response = DeviceResponse.fromDevice(updatedDevice);

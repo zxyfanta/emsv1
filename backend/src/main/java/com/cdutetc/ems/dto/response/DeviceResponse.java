@@ -24,6 +24,8 @@ public class DeviceResponse {
     private String description;
     private String location;
     private String status;
+    private Integer positionX;
+    private Integer positionY;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -36,6 +38,8 @@ public class DeviceResponse {
                 .description(device.getDescription())
                 .location(device.getLocation())
                 .status(device.getStatus().name())
+                .positionX(device.getPositionX())
+                .positionY(device.getPositionY())
                 .createdAt(device.getCreatedAt())
                 .updatedAt(device.getUpdatedAt())
                 .build();

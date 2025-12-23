@@ -59,3 +59,12 @@ export const getDeviceStatistics = () => {
     method: 'get'
   })
 }
+
+// 获取所有设备（用于可视化大屏）
+export const getAllDevices = () => {
+  return request({
+    url: '/devices',
+    method: 'get',
+    params: { size: 1000 }  // 获取所有设备
+  })
+}

@@ -21,6 +21,12 @@ const routes = [
         meta: { title: '数据概览', icon: 'DataAnalysis' }
       },
       {
+        path: 'visualization',
+        name: 'Visualization',
+        component: () => import('@/views/visualization/VisualizationDashboard.vue'),
+        meta: { title: '可视化大屏', icon: 'DataBoard' }
+      },
+      {
         path: 'devices',
         name: 'DeviceList',
         component: () => import('@/views/devices/DeviceList.vue'),
