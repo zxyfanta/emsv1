@@ -5,6 +5,7 @@ export const useAppStore = defineStore('app', {
   state: () => ({
     sidebarCollapsed: false,
     isLoading: false,
+    isFullscreen: false,
     // 系统功能开关配置
     systemConfig: {
       radiationEnabled: true,
@@ -19,6 +20,10 @@ export const useAppStore = defineStore('app', {
 
     setLoading(loading) {
       this.isLoading = loading
+    },
+
+    setFullscreen(fullscreen) {
+      this.isFullscreen = fullscreen
     },
 
     /**

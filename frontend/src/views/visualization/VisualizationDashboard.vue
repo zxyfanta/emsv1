@@ -6,14 +6,14 @@
   >
     <!-- 顶部标题栏 -->
     <div class="header-title">
-      <Decoration8 :reverse="true" style="width:300px; height:50px;" />
+      <Decoration8 :reverse="true" :color="['#00d4ff', '#0099ff']" style="width:300px; height:50px;" />
       <div class="title-wrapper">
         <div class="title-text">EMS设备可视化监控大屏</div>
         <div class="title-decoration">
-          <Decoration10 style="width:200px; height:5px;" />
+          <Decoration10 :color="['#00d4ff', '#ff6b00']" style="width:200px; height:5px;" />
         </div>
       </div>
-      <Decoration8 style="width:300px; height:50px;" />
+      <Decoration8 :color="['#00d4ff', '#0099ff']" style="width:300px; height:50px;" />
     </div>
 
     <!-- 全屏按钮 -->
@@ -27,10 +27,10 @@
     <div class="main-content">
       <!-- 左侧面板 -->
       <div class="left-panel">
-        <BorderBox8 class="panel-container">
+        <BorderBox8 :color="['#00d4ff', '#0099ff']" class="panel-container">
           <template #default>
             <div class="panel-header">
-              <Decoration3 style="width:100%; height:15px;" />
+              <Decoration3 :color="['#00d4ff', '#ff6b00']" style="width:100%; height:15px;" />
               <span class="panel-title">设备统计</span>
             </div>
             <LeftPanel
@@ -44,37 +44,37 @@
 
       <!-- 中间3D场景区 -->
       <div class="center-panel">
-        <BorderBox11 title="3D场景可视化" :title-width="200" class="scene-container">
+        <BorderBox11 title="3D场景可视化" :title-width="200" :color="['#00d4ff', '#0099ff']" class="scene-container">
           <div ref="canvasContainer" class="canvas-wrapper"></div>
           <!-- 场景内装饰 -->
           <div class="scene-decoration-top">
-            <Decoration2 style="width:90%; height:5px; margin:0 auto;" />
+            <Decoration2 :color="['#00d4ff', '#ff6b00']" style="width:90%; height:5px; margin:0 auto;" />
           </div>
           <div class="scene-decoration-bottom">
-            <Decoration10 style="width:80%; height:5px; margin:0 auto;" />
+            <Decoration10 :color="['#00d4ff', '#ff6b00']" style="width:80%; height:5px; margin:0 auto;" />
           </div>
           <!-- 场景角落装饰 -->
           <div class="corner-decoration top-left">
-            <Decoration12 style="width:40px; height:40px;" />
+            <Decoration12 :color="['#00d4ff', '#ff6b00']" style="width:40px; height:40px;" />
           </div>
           <div class="corner-decoration top-right">
-            <Decoration12 style="width:40px; height:40px;" />
+            <Decoration12 :color="['#00d4ff', '#ff6b00']" style="width:40px; height:40px;" />
           </div>
           <div class="corner-decoration bottom-left">
-            <Decoration12 style="width:40px; height:40px;" />
+            <Decoration12 :color="['#00d4ff', '#ff6b00']" style="width:40px; height:40px;" />
           </div>
           <div class="corner-decoration bottom-right">
-            <Decoration12 style="width:40px; height:40px;" />
+            <Decoration12 :color="['#00d4ff', '#ff6b00']" style="width:40px; height:40px;" />
           </div>
         </BorderBox11>
       </div>
 
       <!-- 右侧面板 -->
       <div class="right-panel">
-        <BorderBox8 :reverse="true" class="panel-container">
+        <BorderBox8 :reverse="true" :color="['#00d4ff', '#0099ff']" class="panel-container">
           <template #default>
             <div class="panel-header">
-              <Decoration3 style="width:100%; height:15px;" />
+              <Decoration3 :color="['#00d4ff', '#ff6b00']" style="width:100%; height:15px;" />
               <span class="panel-title">设备列表</span>
             </div>
             <RightPanel
@@ -106,6 +106,8 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
+import screenfull from 'screenfull'
+import { useAppStore } from '@/store/app'
 // DataV组件已在main.js全局引入，无需按需引入
 import DeviceDetailPanel from '@/components/visualization/DeviceDetailPanel.vue'
 import LeftPanel from '@/components/visualization/LeftPanel.vue'
@@ -114,12 +116,13 @@ import { getAllDevices } from '@/api/device'
 import { ElMessage } from 'element-plus'
 
 const router = useRouter()
+const appStore = useAppStore()
 const dashboardRef = ref(null)
 const canvasContainer = ref(null)
 const devices = ref([])
 const detailDrawer = ref(false)
 const selectedDevice = ref(null)
-const isFullscreen = ref(false)
+const isFullscreen = computed(() => appStore.isFullscreen)
 
 let scene, camera, renderer, controls
 let animationId
@@ -138,18 +141,16 @@ const onlineCount = computed(() => {
 
 // 切换全屏
 const toggleFullscreen = () => {
-  if (!document.fullscreenElement) {
-    dashboardRef.value?.requestFullscreen().catch(err => {
-      ElMessage.error(`全屏失败: ${err.message}`)
-    })
-  } else {
-    document.exitFullscreen()
+  if (!screenfull.isEnabled) {
+    ElMessage.warning('当前浏览器不支持全屏功能')
+    return
   }
+  screenfull.toggle()
 }
 
 // 监听全屏变化
 const onFullscreenChange = () => {
-  isFullscreen.value = !!document.fullscreenElement
+  appStore.setFullscreen(screenfull.isFullscreen)
 }
 
 // 初始化Three.js场景
@@ -318,7 +319,9 @@ onMounted(() => {
   loadDevices()
   renderer.domElement.addEventListener('click', onMouseClick)
   // 监听全屏变化事件
-  document.addEventListener('fullscreenchange', onFullscreenChange)
+  if (screenfull.isEnabled) {
+    screenfull.on('change', onFullscreenChange)
+  }
 })
 
 onBeforeUnmount(() => {
@@ -326,11 +329,21 @@ onBeforeUnmount(() => {
     resizeObserver.disconnect()
   }
   renderer.domElement.removeEventListener('click', onMouseClick)
-  document.removeEventListener('fullscreenchange', onFullscreenChange)
+  if (screenfull.isEnabled) {
+    screenfull.off('change', onFullscreenChange)
+  }
   cancelAnimationFrame(animationId)
 
   if (renderer) {
     renderer.dispose()
+  }
+
+  // 重置全屏状态
+  appStore.setFullscreen(false)
+
+  // 如果仍在全屏模式，退出全屏
+  if (screenfull.isEnabled && screenfull.isFullscreen) {
+    screenfull.exit()
   }
 })
 </script>
@@ -381,7 +394,7 @@ onBeforeUnmount(() => {
 .title-text {
   font-size: 28px;
   font-weight: bold;
-  background: linear-gradient(90deg, #42d392 25%, #647eff);
+  background: linear-gradient(90deg, #00d4ff 25%, #0099ff);
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -400,20 +413,20 @@ onBeforeUnmount(() => {
   width: 40px;
   height: 40px;
   border-radius: 8px;
-  background: rgba(66, 211, 146, 0.1);
-  border: 1px solid rgba(66, 211, 146, 0.3);
+  background: rgba(0, 212, 255, 0.1);
+  border: 1px solid rgba(0, 212, 255, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.3s;
   z-index: 100;
-  color: #42d392;
+  color: #00d4ff;
 }
 
 .fullscreen-btn:hover {
-  background: rgba(66, 211, 146, 0.2);
-  border-color: rgba(66, 211, 146, 0.5);
+  background: rgba(0, 212, 255, 0.2);
+  border-color: rgba(0, 212, 255, 0.5);
   transform: scale(1.05);
 }
 

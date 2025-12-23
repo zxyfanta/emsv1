@@ -2,7 +2,7 @@
   <div class="left-panel-content">
     <!-- 设备统计卡片 -->
     <div class="stats-section">
-      <Decoration1 :color="['#42d392', '#647eff']" style="width:100%; height:30px;" />
+      <Decoration1 :color="['#00d4ff', '#ff6b00']" style="width:100%; height:30px;" />
       <div class="stats-grid">
         <div class="stat-card">
           <div class="stat-label">总设备数</div>
@@ -26,7 +26,7 @@
     <!-- 设备类型分布 -->
     <div class="chart-section">
       <div class="section-title">
-        <Decoration6 style="width:100%; height:20px;" />
+        <Decoration6 :color="['#00d4ff', '#0099ff']" style="width:100%; height:20px;" />
         <span>设备类型分布</span>
       </div>
       <div ref="typeChartRef" class="chart-container"></div>
@@ -35,7 +35,7 @@
     <!-- 设备状态统计 -->
     <div class="chart-section">
       <div class="section-title">
-        <Decoration6 :reverse="true" style="width:100%; height:20px;" />
+        <Decoration6 :reverse="true" :color="['#00d4ff', '#0099ff']" style="width:100%; height:20px;" />
         <span>设备状态统计</span>
       </div>
       <div ref="statusChartRef" class="chart-container"></div>
@@ -44,7 +44,7 @@
     <!-- 告警信息占位 -->
     <div class="alert-section">
       <div class="section-title">
-        <Decoration5 style="width:100%; height:30px;" />
+        <Decoration5 :color="['#00d4ff', '#ff6b00']" style="width:100%; height:30px;" />
         <span>告警信息</span>
       </div>
       <div class="alert-list">
@@ -106,8 +106,8 @@ const initTypeChart = () => {
       radius: ['40%', '70%'],
       center: ['50%', '50%'],
       data: [
-        { value: radiationCount, name: '辐射设备', itemStyle: { color: '#ff4444' } },
-        { value: environmentCount, name: '环境设备', itemStyle: { color: '#44cc44' } }
+        { value: radiationCount, name: '辐射设备', itemStyle: { color: '#ff6b00' } },
+        { value: environmentCount, name: '环境设备', itemStyle: { color: '#00d4ff' } }
       ],
       label: {
         color: '#fff',
@@ -174,14 +174,14 @@ const initStatusChart = () => {
         type: 'bar',
         stack: 'status',
         data: [radiationOnline, envOnline],
-        itemStyle: { color: '#67c23a' }
+        itemStyle: { color: '#00d4ff' }
       },
       {
         name: '离线',
         type: 'bar',
         stack: 'status',
         data: [radiationOffline, envOffline],
-        itemStyle: { color: '#909399' }
+        itemStyle: { color: '#666666' }
       }
     ],
     legend: {
@@ -259,11 +259,11 @@ watch(() => props.devices, () => {
 }
 
 .stat-value.located {
-  color: #409eff;
+  color: #00d4ff;
 }
 
 .stat-value.online {
-  color: #67c23a;
+  color: #00d4ff;
 }
 
 .stat-value.offline {

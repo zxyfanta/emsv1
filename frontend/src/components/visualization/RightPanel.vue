@@ -3,7 +3,7 @@
     <!-- 设备筛选 -->
     <div class="filter-section">
       <div class="section-title">
-        <Decoration3 style="width:100%; height:20px;" />
+        <Decoration3 :color="['#00d4ff', '#ff6b00']" style="width:100%; height:20px;" />
         <span>设备列表</span>
       </div>
       <div class="filter-buttons">
@@ -70,7 +70,7 @@
     <!-- 实时数据占位 -->
     <div class="realtime-section">
       <div class="section-title">
-        <Decoration4 style="width:5px; height:20px;" />
+        <Decoration4 :color="['#00d4ff', '#ff6b00']" style="width:5px; height:20px;" />
         <span>实时数据</span>
       </div>
       <div class="realtime-placeholder">
@@ -81,7 +81,7 @@
     <!-- 快捷操作 -->
     <div class="actions-section">
       <div class="section-title">
-        <Decoration7 style="width:150px; height:30px;">快捷操作</Decoration7>
+        <Decoration7 :color="['#00d4ff', '#ff6b00']" style="width:150px; height:30px;">快捷操作</Decoration7>
       </div>
       <div class="action-buttons">
         <el-button type="primary" size="small" @click="handleRefresh">
@@ -191,13 +191,13 @@ const handleExport = () => {
 }
 
 .device-item.active {
-  background: rgba(66, 211, 146, 0.2);
-  border-left-color: #42d392;
+  background: rgba(0, 212, 255, 0.2);
+  border-left-color: #00d4ff;
 }
 
 .device-item.radiation.active {
-  background: rgba(255, 68, 68, 0.2);
-  border-left-color: #ff4444;
+  background: rgba(255, 107, 0, 0.2);
+  border-left-color: #ff6b00;
 }
 
 .device-item.offline {
@@ -221,8 +221,8 @@ const handleExport = () => {
 }
 
 .status-dot.online {
-  background: #67c23a;
-  box-shadow: 0 0 8px #67c23a;
+  background: #00d4ff;
+  box-shadow: 0 0 8px #00d4ff;
 }
 
 .device-info {

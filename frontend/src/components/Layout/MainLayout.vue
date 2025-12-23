@@ -1,13 +1,13 @@
 <template>
   <el-container class="main-layout">
-    <el-aside :width="sidebarWidth">
+    <el-aside v-show="!appStore.isFullscreen" :width="sidebarWidth">
       <AppSidebar />
     </el-aside>
     <el-container>
-      <el-header height="60px">
+      <el-header v-show="!appStore.isFullscreen" height="60px">
         <AppHeader />
       </el-header>
-      <el-main>
+      <el-main :class="{ 'fullscreen-main': appStore.isFullscreen }">
         <router-view />
       </el-main>
     </el-container>
@@ -53,5 +53,10 @@ onMounted(async () => {
 .el-main {
   background-color: #f0f2f5;
   padding: 20px;
+}
+
+.el-main.fullscreen-main {
+  padding: 0;
+  height: 100vh;
 }
 </style>
