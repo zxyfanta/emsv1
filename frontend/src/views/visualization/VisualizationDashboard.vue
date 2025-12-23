@@ -44,7 +44,7 @@
             <LeftPanel
               :devices="devices"
               :online-count="onlineCount"
-              @device-click="handleDeviceClick"
+              @back="goBack"
             />
           </template>
         </dv-border-box-8>
@@ -83,15 +83,8 @@
       <div class="right-panel">
         <dv-border-box-8 :reverse="true" class="panel-container" :color="['#1890ff', '#096dd9']">
           <template #default>
-            <div class="panel-header">
-              <div class="panel-title">设备列表</div>
-            </div>
             <RightPanel
               :devices="devices"
-              :selected-device="selectedDevice"
-              @device-click="handleDeviceClick"
-              @edit-device="handleEditDevice"
-              @view-data="handleViewData"
             />
           </template>
         </dv-border-box-8>

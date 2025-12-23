@@ -1,13 +1,16 @@
 package com.cdutetc.ems.mqtt;
 
 import com.cdutetc.ems.config.MqttConfig;
+import com.cdutetc.ems.dto.event.DeviceDataEvent;
 import com.cdutetc.ems.dto.mqtt.MqttDeviceDataMessage;
 import com.cdutetc.ems.entity.Device;
 import com.cdutetc.ems.entity.enums.DeviceStatus;
 import com.cdutetc.ems.entity.enums.DeviceType;
+import com.cdutetc.ems.service.AlertService;
 import com.cdutetc.ems.service.DeviceService;
 import com.cdutetc.ems.service.EnvironmentDeviceDataService;
 import com.cdutetc.ems.service.RadiationDeviceDataService;
+import com.cdutetc.ems.service.SseEmitterService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +34,8 @@ public class MqttMessageListener implements MqttCallback {
     private final DeviceService deviceService;
     private final RadiationDeviceDataService radiationDeviceDataService;
     private final EnvironmentDeviceDataService environmentDeviceDataService;
+    private final SseEmitterService sseEmitterService;
+    private final AlertService alertService;
     private final MqttConfig mqttConfig;
     private final ObjectMapper objectMapper;
 
@@ -248,8 +253,38 @@ public class MqttMessageListener implements MqttCallback {
             }
 
             // 保存数据
-            radiationDeviceDataService.save(data);
+            com.cdutetc.ems.entity.RadiationDeviceData savedData = radiationDeviceDataService.save(data);
             log.info("💾 辐射设备数据已保存: {}", device.getDeviceCode());
+
+            // SSE推送实时数据
+            try {
+                DeviceDataEvent event = new DeviceDataEvent(
+                    "radiation-data",
+                    device.getDeviceCode(),
+                    "RADIATION_MONITOR",
+                    java.util.Map.of(
+                        "cpm", savedData.getCpm(),
+                        "batVolt", savedData.getBatvolt(),
+                        "recordTime", savedData.getRecordTime().toString()
+                    )
+                );
+                sseEmitterService.broadcastDeviceData(device.getCompany().getId(), event);
+                log.debug("📡 SSE推送辐射数据成功: {}", device.getDeviceCode());
+            } catch (Exception e) {
+                log.warn("⚠️ SSE推送辐射数据失败: {}", e.getMessage());
+            }
+
+            // 检查告警条件
+            try {
+                alertService.checkRadiationDataAndAlert(
+                    device.getDeviceCode(),
+                    savedData.getCpm(),
+                    device.getId(),
+                    device.getCompany().getId()
+                );
+            } catch (Exception e) {
+                log.warn("⚠️ 辐射数据告警检查失败: {}", e.getMessage());
+            }
 
         } catch (Exception e) {
             log.error("❌ 处理辐射设备数据失败: {}", device.getDeviceCode(), e);
@@ -305,8 +340,40 @@ public class MqttMessageListener implements MqttCallback {
             }
 
             // 保存数据
-            environmentDeviceDataService.save(data);
+            com.cdutetc.ems.entity.EnvironmentDeviceData savedData = environmentDeviceDataService.save(data);
             log.info("💾 环境设备数据已保存: {}", device.getDeviceCode());
+
+            // SSE推送实时数据
+            try {
+                DeviceDataEvent event = new DeviceDataEvent(
+                    "environment-data",
+                    device.getDeviceCode(),
+                    "ENVIRONMENT_STATION",
+                    java.util.Map.of(
+                        "cpm", savedData.getCpm(),
+                        "temperature", savedData.getTemperature(),
+                        "wetness", savedData.getWetness(),
+                        "windspeed", savedData.getWindspeed(),
+                        "recordTime", savedData.getRecordTime().toString()
+                    )
+                );
+                sseEmitterService.broadcastDeviceData(device.getCompany().getId(), event);
+                log.debug("📡 SSE推送环境数据成功: {}", device.getDeviceCode());
+            } catch (Exception e) {
+                log.warn("⚠️ SSE推送环境数据失败: {}", e.getMessage());
+            }
+
+            // 检查告警条件
+            try {
+                alertService.checkEnvironmentDataAndAlert(
+                    device.getDeviceCode(),
+                    savedData.getBattery(),
+                    device.getId(),
+                    device.getCompany().getId()
+                );
+            } catch (Exception e) {
+                log.warn("⚠️ 环境数据告警检查失败: {}", e.getMessage());
+            }
 
         } catch (Exception e) {
             log.error("❌ 处理环境设备数据失败: {}", device.getDeviceCode(), e);

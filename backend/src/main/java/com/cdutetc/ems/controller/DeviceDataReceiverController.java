@@ -1,6 +1,7 @@
 package com.cdutetc.ems.controller;
 
 import com.cdutetc.ems.util.ApiResponse;
+import com.cdutetc.ems.dto.event.DeviceDataEvent;
 import com.cdutetc.ems.dto.request.RadiationDataReceiveRequest;
 import com.cdutetc.ems.dto.request.EnvironmentDataReceiveRequest;
 import com.cdutetc.ems.dto.response.DeviceDataReceiveResponse;
@@ -10,6 +11,7 @@ import com.cdutetc.ems.entity.EnvironmentDeviceData;
 import com.cdutetc.ems.service.DeviceService;
 import com.cdutetc.ems.service.RadiationDeviceDataService;
 import com.cdutetc.ems.service.EnvironmentDeviceDataService;
+import com.cdutetc.ems.service.SseEmitterService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -35,6 +37,7 @@ public class DeviceDataReceiverController {
     private final DeviceService deviceService;
     private final RadiationDeviceDataService radiationDeviceDataService;
     private final EnvironmentDeviceDataService environmentDeviceDataService;
+    private final SseEmitterService sseEmitterService;
 
     /**
      * 接收辐射设备数据
@@ -83,6 +86,24 @@ public class DeviceDataReceiverController {
             data.setLbsUseful(request.getLbsUseful());
 
             RadiationDeviceData savedData = radiationDeviceDataService.save(data);
+
+            // SSE推送实时数据
+            try {
+                DeviceDataEvent event = new DeviceDataEvent(
+                    "radiation-data",
+                    request.getDeviceCode(),
+                    "RADIATION_MONITOR",
+                    java.util.Map.of(
+                        "cpm", savedData.getCpm(),
+                        "batVolt", savedData.getBatvolt(),
+                        "recordTime", savedData.getRecordTime().toString()
+                    )
+                );
+                sseEmitterService.broadcastDeviceData(device.getCompany().getId(), event);
+                log.debug("📡 SSE推送辐射数据成功: {}", request.getDeviceCode());
+            } catch (Exception e) {
+                log.warn("⚠️ SSE推送辐射数据失败: {}", e.getMessage());
+            }
 
             DeviceDataReceiveResponse response = DeviceDataReceiveResponse.builder()
                     .success(true)
@@ -140,6 +161,26 @@ public class DeviceDataReceiverController {
             data.setRecordTime(LocalDateTime.now());
 
             EnvironmentDeviceData savedData = environmentDeviceDataService.save(data);
+
+            // SSE推送实时数据
+            try {
+                DeviceDataEvent event = new DeviceDataEvent(
+                    "environment-data",
+                    request.getDeviceCode(),
+                    "ENVIRONMENT_STATION",
+                    java.util.Map.of(
+                        "cpm", savedData.getCpm(),
+                        "temperature", savedData.getTemperature(),
+                        "wetness", savedData.getWetness(),
+                        "windspeed", savedData.getWindspeed(),
+                        "recordTime", savedData.getRecordTime().toString()
+                    )
+                );
+                sseEmitterService.broadcastDeviceData(device.getCompany().getId(), event);
+                log.debug("📡 SSE推送环境数据成功: {}", request.getDeviceCode());
+            } catch (Exception e) {
+                log.warn("⚠️ SSE推送环境数据失败: {}", e.getMessage());
+            }
 
             DeviceDataReceiveResponse response = DeviceDataReceiveResponse.builder()
                     .success(true)

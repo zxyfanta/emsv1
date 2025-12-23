@@ -22,31 +22,57 @@
       </div>
     </div>
 
-    <!-- 设备类型分布 -->
-    <div class="chart-section">
-      <div class="section-title">设备类型分布</div>
-      <div ref="typeChartRef" class="chart-container"></div>
+    <!-- 搜索栏 -->
+    <div class="search-section">
+      <el-input
+        v-model="searchQuery"
+        placeholder="搜索在线设备"
+        prefix-icon="Search"
+        clearable
+        size="small"
+      />
     </div>
 
-    <!-- 设备状态统计 -->
-    <div class="chart-section">
-      <div class="section-title">设备状态统计</div>
-      <div ref="statusChartRef" class="chart-container"></div>
-    </div>
-
-    <!-- 告警信息占位 -->
-    <div class="alert-section">
-      <div class="section-title">告警信息</div>
-      <div class="alert-list">
-        <div class="alert-placeholder">暂无告警信息</div>
+    <!-- 在线设备列表 -->
+    <el-scrollbar class="device-list-section">
+      <div v-if="filteredOnlineDevices.length === 0" class="empty-state">
+        <el-empty description="暂无在线设备" :image-size="60" />
       </div>
+      <div v-else class="device-list">
+        <div
+          v-for="device in filteredOnlineDevices"
+          :key="device.id"
+          class="device-item"
+          @click="handleDeviceClick(device)"
+        >
+          <div class="device-info">
+            <div class="device-name">{{ device.deviceName }}</div>
+            <div class="device-code">{{ device.deviceCode }}</div>
+          </div>
+          <el-tag
+            :type="device.deviceType === 'RADIATION_MONITOR' ? 'danger' : 'success'"
+            size="small"
+          >
+            {{ device.deviceType === 'RADIATION_MONITOR' ? '辐射' : '环境' }}
+          </el-tag>
+        </div>
+      </div>
+    </el-scrollbar>
+
+    <!-- 返回按钮（固定底部） -->
+    <div class="back-button-section">
+      <el-button type="primary" @click="$emit('back')" style="width: 100%;">
+        <el-icon><Back /></el-icon>
+        返回系统
+      </el-button>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
-import * as echarts from 'echarts'
+import { ref, computed } from 'vue'
+import { Back } from '@element-plus/icons-vue'
+import { useVisualizationStore } from '@/store/visualization'
 
 const props = defineProps({
   devices: {
@@ -59,12 +85,10 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['device-click'])
+const emit = defineEmits(['back'])
 
-const typeChartRef = ref(null)
-const statusChartRef = ref(null)
-let typeChart = null
-let statusChart = null
+const visualizationStore = useVisualizationStore()
+const searchQuery = ref('')
 
 const devicesWithPosition = computed(() => {
   return props.devices.filter(d => d.positionX !== null && d.positionY !== null)
@@ -74,178 +98,67 @@ const offlineCount = computed(() => {
   return props.devices.filter(d => d.status !== 'ONLINE').length
 })
 
-// 初始化类型分布饼图
-const initTypeChart = () => {
-  if (!typeChartRef.value) return
-
-  if (!typeChart) {
-    typeChart = echarts.init(typeChartRef.value)
-  }
-
-  const radiationCount = props.devices.filter(d => d.deviceType === 'RADIATION_MONITOR').length
-  const environmentCount = props.devices.filter(d => d.deviceType === 'ENVIRONMENT_STATION').length
-
-  const option = {
-    backgroundColor: 'transparent',
-    tooltip: {
-      trigger: 'item',
-      textStyle: { color: '#e8e8e8' }
-    },
-    series: [{
-      type: 'pie',
-      radius: ['40%', '70%'],
-      center: ['50%', '50%'],
-      data: [
-        { value: radiationCount, name: '辐射设备', itemStyle: { color: '#ff4d4f' } },
-        { value: environmentCount, name: '环境设备', itemStyle: { color: '#1890ff' } }
-      ],
-      label: {
-        color: '#e8e8e8',
-        fontSize: 12
-      },
-      labelLine: {
-        lineStyle: { color: '#595959' }
-      }
-    }]
-  }
-
-  typeChart.setOption(option)
-}
-
-// 初始化状态统计柱状图
-const initStatusChart = () => {
-  if (!statusChartRef.value) return
-
-  if (!statusChart) {
-    statusChart = echarts.init(statusChartRef.value)
-  }
-
-  const radiationOnline = props.devices.filter(d =>
-    d.deviceType === 'RADIATION_MONITOR' && d.status === 'ONLINE'
-  ).length
-  const radiationOffline = props.devices.filter(d =>
-    d.deviceType === 'RADIATION_MONITOR' && d.status !== 'ONLINE'
-  ).length
-  const envOnline = props.devices.filter(d =>
-    d.deviceType === 'ENVIRONMENT_STATION' && d.status === 'ONLINE'
-  ).length
-  const envOffline = props.devices.filter(d =>
-    d.deviceType === 'ENVIRONMENT_STATION' && d.status !== 'ONLINE'
-  ).length
-
-  const option = {
-    backgroundColor: 'transparent',
-    tooltip: {
-      trigger: 'axis',
-      axisPointer: { type: 'shadow' },
-      textStyle: { color: '#e8e8e8' }
-    },
-    grid: {
-      left: '10%',
-      right: '10%',
-      top: '10%',
-      bottom: '20%'
-    },
-    xAxis: {
-      type: 'category',
-      data: ['辐射设备', '环境设备'],
-      axisLabel: { color: '#8c8c8c' },
-      axisLine: { lineStyle: { color: '#434343' } }
-    },
-    yAxis: {
-      type: 'value',
-      axisLabel: { color: '#8c8c8c' },
-      axisLine: { lineStyle: { color: '#434343' } },
-      splitLine: { lineStyle: { color: '#262626', type: 'dashed' } }
-    },
-    series: [
-      {
-        name: '在线',
-        type: 'bar',
-        stack: 'status',
-        data: [radiationOnline, envOnline],
-        itemStyle: { color: '#52c41a' }
-      },
-      {
-        name: '离线',
-        type: 'bar',
-        stack: 'status',
-        data: [radiationOffline, envOffline],
-        itemStyle: { color: '#8c8c8c' }
-      }
-    ],
-    legend: {
-      textStyle: { color: '#8c8c8c' },
-      bottom: 0
-    }
-  }
-
-  statusChart.setOption(option)
-}
-
-const handleResize = () => {
-  typeChart?.resize()
-  statusChart?.resize()
-}
-
-onMounted(() => {
-  initTypeChart()
-  initStatusChart()
-
-  window.addEventListener('resize', handleResize)
+// 获取所有在线设备
+const onlineDevices = computed(() => {
+  return props.devices.filter(d => d.status === 'ONLINE')
 })
 
-onBeforeUnmount(() => {
-  window.removeEventListener('resize', handleResize)
-  typeChart?.dispose()
-  statusChart?.dispose()
+// 过滤在线设备（按名称或编码搜索）
+const filteredOnlineDevices = computed(() => {
+  if (!searchQuery.value) {
+    return onlineDevices.value
+  }
+  const query = searchQuery.value.toLowerCase()
+  return onlineDevices.value.filter(device =>
+    device.deviceName?.toLowerCase().includes(query) ||
+    device.deviceCode?.toLowerCase().includes(query)
+  )
 })
 
-// 监听设备数据变化，更新图表
-watch(() => props.devices, () => {
-  initTypeChart()
-  initStatusChart()
-}, { deep: true })
+// 点击设备
+const handleDeviceClick = (device) => {
+  // 同时选中设备并同步到右侧实时信息栏
+  visualizationStore.setSelectedDevice(device)
+}
 </script>
 
 <style scoped>
 .left-panel-content {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 50px 16px 16px 16px; /* 顶部留出panel-header空间 */
   height: 100%;
-  overflow-y: auto;
+  padding: 50px 16px 16px 16px; /* 顶部留出panel-header空间 */
 }
 
 .stats-section {
   flex-shrink: 0;
+  margin-bottom: 12px;
 }
 
 .stats-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
-  margin-top: 10px;
 }
 
 .stat-card {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(24, 144, 255, 0.08);
+  border: 1px solid rgba(24, 144, 255, 0.2);
   border-radius: 8px;
-  padding: 12px;
+  padding: 10px;
   text-align: center;
 }
 
 .stat-label {
-  font-size: 12px;
-  color: #909399;
-  margin-bottom: 8px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 6px;
 }
 
 .stat-value {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: bold;
-  color: #303133;
+  color: #ffffff;
 }
 
 .stat-value.located {
@@ -253,49 +166,88 @@ watch(() => props.devices, () => {
 }
 
 .stat-value.online {
-  color: #1890ff;
+  color: #52c41a;
 }
 
 .stat-value.offline {
-  color: #909399;
+  color: #8c8c8c;
 }
 
-.chart-section {
+.search-section {
+  flex-shrink: 0;
+  margin-bottom: 12px;
+}
+
+.search-section :deep(.el-input__wrapper) {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(24, 144, 255, 0.3);
+}
+
+.search-section :deep(.el-input__inner) {
+  color: #ffffff;
+}
+
+.device-list-section {
   flex: 1;
-  min-height: 200px;
+  overflow-y: auto;
+  margin-bottom: 12px;
+}
+
+.device-list-section :deep(.el-scrollbar__wrap) {
+  overflow-x: hidden;
+}
+
+.device-list {
   display: flex;
   flex-direction: column;
+  gap: 8px;
 }
 
-.section-title {
-  margin-bottom: 12px;
-  font-size: 14px;
-  font-weight: 500;
-  color: #e8e8e8;
-  padding-bottom: 8px;
-  border-bottom: 1px solid rgba(24, 144, 255, 0.2);
+.device-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(24, 144, 255, 0.1);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s;
 }
 
-.chart-container {
+.device-item:hover {
+  background: rgba(24, 144, 255, 0.1);
+  border-color: rgba(24, 144, 255, 0.4);
+  transform: translateX(4px);
+}
+
+.device-info {
   flex: 1;
-  min-height: 150px;
 }
 
-.alert-section {
+.device-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: #ffffff;
+  margin-bottom: 2px;
+}
+
+.device-code {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.back-button-section {
   flex-shrink: 0;
+  height: 60px;
+  display: flex;
+  align-items: center;
 }
 
-.alert-list {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
-  padding: 12px;
-  min-height: 80px;
-}
-
-.alert-placeholder {
-  text-align: center;
-  color: #909399;
-  font-size: 12px;
-  padding: 20px 0;
+.empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
 }
 </style>

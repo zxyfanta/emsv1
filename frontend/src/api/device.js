@@ -68,3 +68,21 @@ export const getAllDevices = () => {
     params: { size: 1000 }  // 获取所有设备
   })
 }
+
+// 获取辐射设备最新数据
+export const getRadiationDeviceLatestData = (deviceCode) => {
+  return request({
+    url: '/radiation-data/latest',
+    method: 'get',
+    params: { deviceCode }
+  })
+}
+
+// 获取环境设备最新数据
+export const getEnvironmentDeviceLatestData = (deviceCode) => {
+  return request({
+    url: '/environment-data/latest',
+    method: 'get',
+    params: { deviceCode }
+  })
+}
