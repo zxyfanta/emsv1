@@ -1,45 +1,75 @@
 <template>
   <div class="visualization-dashboard">
-    <div ref="canvasContainer" class="canvas-container"></div>
+    <!-- 顶部标题栏 -->
+    <div class="header-title">
+      <Decoration8 :reverse="true" style="width:300px; height:50px;" />
+      <div class="title-text">EMS设备可视化监控大屏</div>
+      <Decoration8 style="width:300px; height:50px;" />
+    </div>
 
-    <!-- 设备详情抽屉 -->
-    <el-drawer v-model="detailDrawer" title="设备详情" size="400px">
+    <!-- 三列布局 -->
+    <div class="main-content">
+      <!-- 左侧面板 -->
+      <div class="left-panel">
+        <BorderBox8 class="panel-container">
+          <LeftPanel
+            :devices="devices"
+            :online-count="onlineCount"
+            @device-click="handleDeviceClick"
+          />
+        </BorderBox8>
+      </div>
+
+      <!-- 中间3D场景区 -->
+      <div class="center-panel">
+        <BorderBox1 class="scene-container">
+          <div ref="canvasContainer" class="canvas-wrapper"></div>
+          <!-- 场景内装饰 -->
+          <div class="scene-decoration">
+            <Decoration2 style="width:90%; height:5px; margin:10px auto;" />
+          </div>
+        </BorderBox1>
+      </div>
+
+      <!-- 右侧面板 -->
+      <div class="right-panel">
+        <BorderBox8 :reverse="true" class="panel-container">
+          <RightPanel
+            :devices="devices"
+            :selected-device="selectedDevice"
+            @device-click="handleDeviceClick"
+            @edit-device="handleEditDevice"
+            @view-data="handleViewData"
+          />
+        </BorderBox8>
+      </div>
+    </div>
+
+    <!-- 设备详情抽屉（保持z-index管理） -->
+    <el-drawer
+      v-model="detailDrawer"
+      title="设备详情"
+      size="400px"
+      :z-index="9999"
+    >
       <DeviceDetailPanel v-if="selectedDevice" :device="selectedDevice" />
     </el-drawer>
-
-    <!-- 提示信息 -->
-    <div class="info-panel">
-      <el-card>
-        <template #header>
-          <span>设备统计</span>
-        </template>
-        <div class="stats">
-          <div class="stat-item">
-            <span class="label">总设备数：</span>
-            <span class="value">{{ devices.length }}</span>
-          </div>
-          <div class="stat-item">
-            <span class="label">已定位：</span>
-            <span class="value">{{ devicesWithPosition.length }}</span>
-          </div>
-          <div class="stat-item">
-            <span class="label">在线：</span>
-            <span class="value online">{{ onlineCount }}</span>
-          </div>
-        </div>
-      </el-card>
-    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { useRouter } from 'vue-router'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
+// DataV组件已在main.js全局引入，无需按需引入
 import DeviceDetailPanel from '@/components/visualization/DeviceDetailPanel.vue'
+import LeftPanel from '@/components/visualization/LeftPanel.vue'
+import RightPanel from '@/components/visualization/RightPanel.vue'
 import { getAllDevices } from '@/api/device'
 import { ElMessage } from 'element-plus'
 
+const router = useRouter()
 const canvasContainer = ref(null)
 const devices = ref([])
 const detailDrawer = ref(false)
@@ -48,6 +78,7 @@ const selectedDevice = ref(null)
 let scene, camera, renderer, controls
 let animationId
 const deviceMarkers = []
+let resizeObserver = null
 
 // 过滤出已设置位置的设备
 const devicesWithPosition = computed(() => {
@@ -63,13 +94,13 @@ const onlineCount = computed(() => {
 const initScene = () => {
   // 创建场景
   scene = new THREE.Scene()
-  scene.background = new THREE.Color(0x1a1a2e)
+  scene.background = new THREE.Color(0x0a0e1a)
 
   // 创建相机
   const width = canvasContainer.value.clientWidth
   const height = canvasContainer.value.clientHeight
   camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000)
-  camera.position.set(0, 30, 40)
+  camera.position.set(0, 35, 50)
   camera.lookAt(0, 0, 0)
 
   // 创建渲染器
@@ -81,6 +112,8 @@ const initScene = () => {
   controls = new OrbitControls(camera, renderer.domElement)
   controls.enableDamping = true
   controls.dampingFactor = 0.05
+  controls.minDistance = 20
+  controls.maxDistance = 100
 
   // 添加光源
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.5)
@@ -108,22 +141,22 @@ const initScene = () => {
   centerCube.position.set(0, 5, 0)
   scene.add(centerCube)
 
-  // 监听窗口大小变化
-  window.addEventListener('resize', onWindowResize)
+  // 使用ResizeObserver监听容器尺寸变化
+  resizeObserver = new ResizeObserver(onCanvasResize)
+  resizeObserver.observe(canvasContainer.value)
 
   // 开始动画循环
   animate()
 }
 
-// 窗口大小变化处理
-const onWindowResize = () => {
-  if (!canvasContainer.value) return
-  const width = canvasContainer.value.clientWidth
-  const height = canvasContainer.value.clientHeight
-
-  camera.aspect = width / height
-  camera.updateProjectionMatrix()
-  renderer.setSize(width, height)
+// Canvas容器resize处理
+const onCanvasResize = (entries) => {
+  for (let entry of entries) {
+    const { width, height } = entry.contentRect
+    camera.aspect = width / height
+    camera.updateProjectionMatrix()
+    renderer.setSize(width, height)
+  }
 }
 
 // 创建设备标记
@@ -181,8 +214,7 @@ const onMouseClick = (event) => {
   const intersects = raycaster.intersectObjects(deviceMarkers)
   if (intersects.length > 0) {
     const device = intersects[0].object.userData.device
-    selectedDevice.value = device
-    detailDrawer.value = true
+    handleDeviceClick(device)
   }
 }
 
@@ -199,6 +231,26 @@ const loadDevices = async () => {
   }
 }
 
+// 处理设备点击
+const handleDeviceClick = (device) => {
+  selectedDevice.value = device
+  detailDrawer.value = true
+}
+
+// 处理编辑设备
+const handleEditDevice = (device) => {
+  router.push(`/devices/${device.id}/edit`)
+}
+
+// 处理查看数据
+const handleViewData = (device) => {
+  if (device.deviceType === 'RADIATION_MONITOR') {
+    router.push('/radiation-data')
+  } else {
+    router.push('/environment-data')
+  }
+}
+
 onMounted(() => {
   initScene()
   loadDevices()
@@ -206,7 +258,9 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-  window.removeEventListener('resize', onWindowResize)
+  if (resizeObserver) {
+    resizeObserver.disconnect()
+  }
   renderer.domElement.removeEventListener('click', onMouseClick)
   cancelAnimationFrame(animationId)
 
@@ -220,43 +274,85 @@ onBeforeUnmount(() => {
 .visualization-dashboard {
   width: 100%;
   height: 100vh;
-  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(135deg, #0a0e1a 0%, #1a1f3a 100%);
+  padding: 16px;
+  box-sizing: border-box;
 }
 
-.canvas-container {
+.header-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  height: 60px;
+  flex-shrink: 0;
+}
+
+.title-text {
+  font-size: 28px;
+  font-weight: bold;
+  background: linear-gradient(90deg, #42d392 25%, #647eff);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: 4px;
+}
+
+.main-content {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 320px 1fr 320px;
+  gap: 16px;
+  min-height: 0;
+}
+
+.left-panel,
+.right-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.panel-container {
+  flex: 1;
   width: 100%;
   height: 100%;
 }
 
-.info-panel {
+.center-panel {
+  position: relative;
+  min-height: 0;
+}
+
+.scene-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.canvas-wrapper {
+  width: 100%;
+  height: 100%;
   position: absolute;
-  top: 20px;
-  left: 20px;
-  width: 200px;
-  z-index: 10;
+  top: 0;
+  left: 0;
 }
 
-.stats {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+.scene-decoration {
+  position: absolute;
+  bottom: 20px;
+  left: 0;
+  right: 0;
+  z-index: 5;
+  pointer-events: none;
 }
 
-.stat-item {
-  display: flex;
-  justify-content: space-between;
-}
-
-.stat-item .label {
-  color: #606266;
-}
-
-.stat-item .value {
-  font-weight: bold;
-  color: #303133;
-}
-
-.stat-item .value.online {
-  color: #67c23a;
+/* DataV边框内部容器样式调整 */
+:deep(.dv-border-box-content) {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
 }
 </style>
