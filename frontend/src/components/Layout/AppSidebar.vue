@@ -50,7 +50,15 @@ const activeMenu = computed(() => {
 
 const menuRoutes = computed(() => {
   const mainRoute = router.getRoutes().find(r => r.path === '/')
-  return mainRoute?.children || []
+  const children = mainRoute?.children || []
+
+  // 在菜单顶部添加可视化大屏（指向独立路由）
+  const visualizationRoute = router.getRoutes().find(r => r.path === '/visualization')
+  if (visualizationRoute) {
+    return [visualizationRoute, ...children]
+  }
+
+  return children
 })
 
 /**

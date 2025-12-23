@@ -1,10 +1,18 @@
 <template>
-  <div ref="rootContainer" class="root-container">
+  <div class="root-container">
+    <!-- 返回按钮（独立路由模式下显示） -->
+    <div v-if="isStandalone" class="back-btn" @click="goBack">
+      <el-icon :size="20">
+        <ArrowLeft />
+      </el-icon>
+      <span>返回系统</span>
+    </div>
+
     <dv-full-screen-container>
       <div
         ref="dashboardRef"
         class="visualization-dashboard"
-        :class="{ 'fullscreen': isFullscreen }"
+        :class="{ 'standalone': isStandalone }"
       >
     <!-- 顶部标题栏 -->
     <div class="header-title">
@@ -22,13 +30,6 @@
 
       <!-- 右侧装饰 -->
       <dv-decoration-8 :color="['#1890ff', '#096dd9']" style="width:250px; height:40px;" />
-    </div>
-
-    <!-- 全屏按钮 -->
-    <div class="fullscreen-btn" @click="toggleFullscreen">
-      <el-icon :size="24">
-        <component :is="isFullscreen ? 'Exit' : 'FullScreen'" />
-      </el-icon>
     </div>
 
     <!-- 三列布局 -->
@@ -116,8 +117,9 @@ import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
-import { useAppStore } from '@/store/app'
-// DataV组件已在main.js全局引入，无需按需引入
+import { CSS2DRenderer } from 'three/examples/jsm/renderers/CSS2DRenderer.js'
+import { createRegionOutline, regionOutlineData } from '@/constants/regionOutline'
+import { createAllDeviceModels, animateDevices, handleDeviceClick as handleDevice3DClick, highlightDevice, initCSS2DRenderer } from '@/utils/device3DModels'
 import DeviceDetailPanel from '@/components/visualization/DeviceDetailPanel.vue'
 import LeftPanel from '@/components/visualization/LeftPanel.vue'
 import RightPanel from '@/components/visualization/RightPanel.vue'
@@ -125,21 +127,23 @@ import { getAllDevices } from '@/api/device'
 import { ElMessage } from 'element-plus'
 
 const router = useRouter()
-const appStore = useAppStore()
-const rootContainer = ref(null) // 根容器，用于全屏
 const dashboardRef = ref(null)
 const canvasContainer = ref(null)
 const devices = ref([])
 const detailDrawer = ref(false)
 const selectedDevice = ref(null)
 
-// 使用 appStore 管理全屏状态
-const isFullscreen = computed(() => appStore.isFullscreen)
+// 检查是否为独立路由模式（不使用 MainLayout）
+const isStandalone = computed(() => {
+  return router.currentRoute.value.meta?.fullscreen === true
+})
 
-let scene, camera, renderer, controls
+let scene, camera, renderer, css2DRenderer, controls
 let animationId
 const deviceMarkers = []
+let devices3DGroup = null
 let resizeObserver = null
+let regionOutline = null
 
 // 过滤出已设置位置的设备
 const devicesWithPosition = computed(() => {
@@ -150,16 +154,6 @@ const devicesWithPosition = computed(() => {
 const onlineCount = computed(() => {
   return devices.value.filter(d => d.status === 'ONLINE').length
 })
-
-// 切换全屏（使用 appStore 管理专注模式）
-const toggleFullscreen = () => {
-  appStore.toggleFullscreen()
-
-  // 触发窗口resize事件，确保Three.js场景正确调整
-  setTimeout(() => {
-    window.dispatchEvent(new Event('resize'))
-  }, 100)
-}
 
 // 初始化Three.js场景
 const initScene = () => {
@@ -172,13 +166,17 @@ const initScene = () => {
   const width = canvasContainer.value.clientWidth
   const height = canvasContainer.value.clientHeight
   camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000)
-  camera.position.set(0, 35, 50)
+  camera.position.set(0, 40, 60)
   camera.lookAt(0, 0, 0)
 
-  // 创建渲染器
+  // 创建WebGL渲染器
   renderer = new THREE.WebGLRenderer({ antialias: true })
   renderer.setSize(width, height)
+  renderer.setPixelRatio(window.devicePixelRatio)
   canvasContainer.value.appendChild(renderer.domElement)
+
+  // 创建CSS2D渲染器（用于HTML标签）
+  css2DRenderer = initCSS2DRenderer(canvasContainer.value, renderer)
 
   // 创建控制器
   controls = new OrbitControls(camera, renderer.domElement)
@@ -193,25 +191,32 @@ const initScene = () => {
 
   const directionalLight = new THREE.DirectionalLight(0xffffff, 1)
   directionalLight.position.set(10, 20, 10)
+  directionalLight.castShadow = true
   scene.add(directionalLight)
 
-  // 添加地面
-  const groundGeometry = new THREE.PlaneGeometry(50, 50)
-  const groundMaterial = new THREE.MeshBasicMaterial({ color: 0x333333 })
-  const ground = new THREE.Mesh(groundGeometry, groundMaterial)
-  ground.rotation.x = -Math.PI / 2
-  scene.add(ground)
+  // 添加点光源（增强设备高光效果）
+  const pointLight1 = new THREE.PointLight(0x1890ff, 0.5, 50)
+  pointLight1.position.set(20, 30, 20)
+  scene.add(pointLight1)
 
-  // 添加中心模型
-  const centerGeometry = new THREE.BoxGeometry(10, 10, 10)
-  const centerMaterial = new THREE.MeshStandardMaterial({
-    color: 0x4a90e2,
-    transparent: true,
-    opacity: 0.8
+  const pointLight2 = new THREE.PointLight(0x1890ff, 0.5, 50)
+  pointLight2.position.set(-20, 30, -20)
+  scene.add(pointLight2)
+
+  // 添加网格地面（辅助网格）
+  const gridHelper = new THREE.GridHelper(100, 50, 0x1890ff, 0x1a2332)
+  scene.add(gridHelper)
+
+  // 创建地区轮廓
+  regionOutline = createRegionOutline(scene, regionOutlineData)
+
+  // 创建3D设备模型组
+  devices3DGroup = createAllDeviceModels(devicesWithPosition.value, THREE, {
+    scale: 1,
+    showLabel: true,
+    animated: true
   })
-  const centerCube = new THREE.Mesh(centerGeometry, centerMaterial)
-  centerCube.position.set(0, 5, 0)
-  scene.add(centerCube)
+  scene.add(devices3DGroup)
 
   // 使用ResizeObserver监听容器尺寸变化
   resizeObserver = new ResizeObserver(onCanvasResize)
@@ -228,66 +233,55 @@ const onCanvasResize = (entries) => {
     camera.aspect = width / height
     camera.updateProjectionMatrix()
     renderer.setSize(width, height)
+    if (css2DRenderer) {
+      css2DRenderer.setSize(width, height)
+    }
   }
 }
 
-// 创建设备标记
-const createDeviceMarkers = () => {
-  // 清除旧标记
-  deviceMarkers.forEach(marker => scene.remove(marker))
-  deviceMarkers.length = 0
+// 更新3D设备模型
+const updateDevice3DModels = () => {
+  if (!devices3DGroup) return
 
-  // 创建新标记
-  devicesWithPosition.value.forEach(device => {
-    const x = ((device.positionX || 50) - 50) * 0.4
-    const z = ((device.positionY || 50) - 50) * 0.4
+  // 移除旧的设备模型
+  scene.remove(devices3DGroup)
 
-    // 创建球体
-    const geometry = new THREE.SphereGeometry(0.5, 32, 32)
-    const isOnline = device.status === 'ONLINE'
-    const isRadiation = device.deviceType === 'RADIATION_MONITOR'
-
-    let color
-    if (!isOnline) {
-      color = isRadiation ? 0x8b0000 : 0x2e4d28
-    } else {
-      color = isRadiation ? 0xff4444 : 0x44cc44
-    }
-
-    const material = new THREE.MeshStandardMaterial({ color })
-    const sphere = new THREE.Mesh(geometry, material)
-    sphere.position.set(x, 0.5, z)
-    sphere.userData = { device }
-    scene.add(sphere)
-    deviceMarkers.push(sphere)
+  // 创建新的设备模型
+  devices3DGroup = createAllDeviceModels(devicesWithPosition.value, THREE, {
+    scale: 1,
+    showLabel: true,
+    animated: true
   })
+  scene.add(devices3DGroup)
 }
 
 // 动画循环
 const animate = () => {
   animationId = requestAnimationFrame(animate)
+
+  const time = Date.now() * 0.001
+
+  // 更新设备动画（呼吸灯效果）
+  if (devices3DGroup) {
+    animateDevices(devices3DGroup, time)
+  }
+
   controls.update()
   renderer.render(scene, camera)
+
+  // 渲染CSS2D标签
+  if (css2DRenderer) {
+    css2DRenderer.render(scene, camera)
+  }
 }
 
 // 点击处理
 const onMouseClick = (event) => {
-  if (!canvasContainer.value) return
+  if (!canvasContainer.value || !devices3DGroup) return
 
-  const rect = renderer.domElement.getBoundingClientRect()
-  const mouse = new THREE.Vector2(
-    ((event.clientX - rect.left) / rect.width) * 2 - 1,
-    -((event.clientY - rect.top) / rect.height) * 2 + 1
-  )
-
-  const raycaster = new THREE.Raycaster()
-  raycaster.setFromCamera(mouse, camera)
-
-  const intersects = raycaster.intersectObjects(deviceMarkers)
-  if (intersects.length > 0) {
-    const device = intersects[0].object.userData.device
+  handleDevice3DClick(event, camera, devices3DGroup, (device) => {
     handleDeviceClick(device)
-  }
+  })
 }
 
 // 加载设备数据
@@ -296,7 +290,8 @@ const loadDevices = async () => {
     const res = await getAllDevices()
     if (res.status === 200) {
       devices.value = res.data.content || []
-      createDeviceMarkers()
+      // 更新3D设备模型
+      updateDevice3DModels()
     }
   } catch (error) {
     ElMessage.error('加载设备数据失败')
@@ -321,6 +316,11 @@ const handleViewData = (device) => {
   } else {
     router.push('/environment-data')
   }
+}
+
+// 返回系统（独立路由模式下使用）
+const goBack = () => {
+  router.push('/dashboard')
 }
 
 onMounted(async () => {
@@ -361,13 +361,45 @@ onBeforeUnmount(() => {
   renderer.domElement.removeEventListener('click', onMouseClick)
   cancelAnimationFrame(animationId)
 
-  if (renderer) {
-    renderer.dispose()
+  // 清理CSS2D渲染器
+  if (css2DRenderer && css2DRenderer.domElement && css2DRenderer.domElement.parentNode) {
+    css2DRenderer.domElement.parentNode.removeChild(css2DRenderer.domElement)
   }
 
-  // 退出专注模式
-  if (appStore.isFullscreen) {
-    appStore.setFullscreen(false)
+  // 清理3D设备模型
+  if (devices3DGroup) {
+    devices3DGroup.children.forEach(deviceGroup => {
+      deviceGroup.children.forEach(child => {
+        if (child.geometry) child.geometry.dispose()
+        if (child.material) {
+          if (Array.isArray(child.material)) {
+            child.material.forEach(m => m.dispose())
+          } else {
+            child.material.dispose()
+          }
+        }
+      })
+    })
+    scene.remove(devices3DGroup)
+  }
+
+  // 清理地区轮廓
+  if (regionOutline) {
+    regionOutline.children.forEach(child => {
+      if (child.geometry) child.geometry.dispose()
+      if (child.material) {
+        if (Array.isArray(child.material)) {
+          child.material.forEach(m => m.dispose())
+        } else {
+          child.material.dispose()
+        }
+      }
+    })
+    scene.remove(regionOutline)
+  }
+
+  if (renderer) {
+    renderer.dispose()
   }
 })
 </script>
@@ -377,6 +409,33 @@ onBeforeUnmount(() => {
   width: 100%;
   height: 100vh;
   overflow: hidden;
+}
+
+/* 返回按钮 */
+.back-btn {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: rgba(24, 144, 255, 0.15);
+  border: 1px solid rgba(24, 144, 255, 0.4);
+  border-radius: 8px;
+  color: #1890ff;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s;
+  backdrop-filter: blur(10px);
+}
+
+.back-btn:hover {
+  background: rgba(24, 144, 255, 0.25);
+  border-color: rgba(24, 144, 255, 0.6);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);
 }
 
 .visualization-dashboard {
@@ -429,30 +488,6 @@ onBeforeUnmount(() => {
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-}
-
-/* 全屏按钮 */
-.fullscreen-btn {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  width: 40px;
-  height: 40px;
-  border-radius: 6px;
-  background: rgba(24, 144, 255, 0.1);
-  border: 1px solid rgba(24, 144, 255, 0.3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s;
-  z-index: 100;
-  color: #1890ff;
-}
-
-.fullscreen-btn:hover {
-  background: rgba(24, 144, 255, 0.2);
-  border-color: rgba(24, 144, 255, 0.5);
 }
 
 .main-content {

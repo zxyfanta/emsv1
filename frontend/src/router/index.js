@@ -8,6 +8,13 @@ const routes = [
     component: () => import('@/views/auth/Login.vue'),
     meta: { title: '登录', requiresAuth: false }
   },
+  // 可视化大屏独立路由（不使用 MainLayout）
+  {
+    path: '/visualization',
+    name: 'Visualization',
+    component: () => import('@/views/visualization/VisualizationDashboard.vue'),
+    meta: { title: '可视化大屏', requiresAuth: true, fullscreen: true }
+  },
   {
     path: '/',
     component: () => import('@/components/Layout/MainLayout.vue'),
@@ -19,12 +26,6 @@ const routes = [
         name: 'Dashboard',
         component: () => import('@/views/Dashboard.vue'),
         meta: { title: '数据概览', icon: 'DataAnalysis' }
-      },
-      {
-        path: 'visualization',
-        name: 'Visualization',
-        component: () => import('@/views/visualization/VisualizationDashboard.vue'),
-        meta: { title: '可视化大屏', icon: 'DataBoard' }
       },
       {
         path: 'devices',

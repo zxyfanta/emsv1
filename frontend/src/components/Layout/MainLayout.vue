@@ -53,10 +53,30 @@ onMounted(async () => {
 .el-main {
   background-color: #f0f2f5;
   padding: 20px;
+  height: 100%;
+  overflow: hidden;
 }
 
+/* 全屏模式样式 */
 .el-main.fullscreen-main {
-  padding: 0;
+  padding: 0 !important;
+  height: 100vh !important;
+  background-color: transparent !important;
+  overflow: hidden !important;
+}
+
+/* 全屏模式下隐藏内部容器的边距和背景 */
+:deep(.fullscreen-main .root-container) {
+  height: 100vh !important;
+}
+
+/* 当处于全屏状态时，让 el-container 也占满整个视口 */
+.main-layout:has(.fullscreen-main) {
+  height: 100vh;
+  overflow: hidden;
+}
+
+.main-layout:has(.fullscreen-main) .el-container {
   height: 100vh;
 }
 </style>
