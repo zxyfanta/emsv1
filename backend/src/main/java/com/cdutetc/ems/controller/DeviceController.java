@@ -29,7 +29,7 @@ import org.springframework.web.bind.annotation.*;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/devices")
+@RequestMapping("/devices")
 @RequiredArgsConstructor
 public class DeviceController {
 
@@ -243,6 +243,26 @@ public class DeviceController {
             log.error("Error updating device status: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.error("设备状态更新失败，请稍后重试"));
+        }
+    }
+
+    /**
+     * 获取设备统计信息
+     */
+    @GetMapping("/statistics")
+    public ResponseEntity<ApiResponse<DeviceService.DeviceStatistics>> getDeviceStatistics() {
+        try {
+            // 获取当前用户信息
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            User currentUser = (User) authentication.getPrincipal();
+
+            DeviceService.DeviceStatistics statistics = deviceService.getDeviceStatistics(currentUser.getCompany().getId());
+            return ResponseEntity.ok(ApiResponse.success("获取设备统计成功", statistics));
+
+        } catch (Exception e) {
+            log.error("Error getting device statistics: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("获取设备统计失败，请稍后重试"));
         }
     }
 }

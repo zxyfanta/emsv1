@@ -25,7 +25,7 @@ import java.time.LocalDateTime;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/radiation-data")
+@RequestMapping("/radiation-data")
 @RequiredArgsConstructor
 public class RadiationDeviceDataController {
 

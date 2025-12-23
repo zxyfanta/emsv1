@@ -25,7 +25,7 @@ import java.time.LocalDateTime;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/environment-data")
+@RequestMapping("/environment-data")
 @RequiredArgsConstructor
 public class EnvironmentDeviceDataController {
 
