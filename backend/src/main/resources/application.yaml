@@ -78,6 +78,11 @@ app:
       password: admin123
       email: admin@ems.com
 
+    # 功能开关配置
+    features:
+      radiation-enabled: ${EMS_FEATURE_RADIATION:true}    # 是否启用辐射监测功能
+      environment-enabled: ${EMS_FEATURE_ENVIRONMENT:true}  # 是否启用环境监测功能
+
     # MQTT配置
     mqtt:
       host: ${EMS_MQTT_HOST:localhost}  # MQTT服务器地址，Docker环境下为mosquitto

@@ -15,13 +15,22 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useAppStore } from '@/store/app'
+import { useUserStore } from '@/store/user'
 import AppHeader from './AppHeader.vue'
 import AppSidebar from './AppSidebar.vue'
 
 const appStore = useAppStore()
+const userStore = useUserStore()
 const sidebarWidth = computed(() => appStore.sidebarCollapsed ? '64px' : '200px')
+
+// 加载系统配置
+onMounted(async () => {
+  if (userStore.isLoggedIn) {
+    await appStore.fetchSystemConfig()
+  }
+})
 </script>
 
 <style scoped>

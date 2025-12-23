@@ -126,6 +126,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 // 允许错误处理器访问
                 .requestMatchers("/error").permitAll()
+                // 系统配置API免认证（前端需要获取功能开关配置）
+                .requestMatchers("/system-config").permitAll()
 
                 // 管理员权限
                 .requestMatchers(HttpMethod.POST, "/api/companies").hasRole("ADMIN")

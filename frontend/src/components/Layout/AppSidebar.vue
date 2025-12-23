@@ -53,10 +53,38 @@ const menuRoutes = computed(() => {
   return mainRoute?.children || []
 })
 
+/**
+ * 检查路由是否可显示
+ * 1. 首先检查角色权限
+ * 2. 然后检查系统功能开关配置
+ */
 const hasPermission = (route) => {
+  const { systemConfig } = appStore
+
+  // 1. 检查角色权限
   const roles = route.meta?.roles
-  if (!roles) return true
-  return roles.includes(userStore.userRole)
+  if (roles && !roles.includes(userStore.userRole)) {
+    return false
+  }
+
+  // 2. 检查系统功能开关
+  const path = route.path.slice(1) // 去掉开头的 /
+  const moduleCode = path.split('/')[0]
+
+  if (moduleCode === 'devices') {
+    // 设备管理：辐射或环境任一启用即显示
+    return systemConfig.radiationEnabled || systemConfig.environmentEnabled
+  }
+
+  if (moduleCode === 'radiation-data') {
+    return systemConfig.radiationEnabled
+  }
+
+  if (moduleCode === 'environment-data') {
+    return systemConfig.environmentEnabled
+  }
+
+  return true
 }
 
 const getIcon = (iconName) => {
