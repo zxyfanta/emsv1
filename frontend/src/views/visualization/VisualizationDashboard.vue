@@ -1,10 +1,26 @@
 <template>
-  <div class="visualization-dashboard">
+  <div
+    ref="dashboardRef"
+    class="visualization-dashboard"
+    :class="{ 'fullscreen': isFullscreen }"
+  >
     <!-- 顶部标题栏 -->
     <div class="header-title">
       <Decoration8 :reverse="true" style="width:300px; height:50px;" />
-      <div class="title-text">EMS设备可视化监控大屏</div>
+      <div class="title-wrapper">
+        <div class="title-text">EMS设备可视化监控大屏</div>
+        <div class="title-decoration">
+          <Decoration10 style="width:200px; height:5px;" />
+        </div>
+      </div>
       <Decoration8 style="width:300px; height:50px;" />
+    </div>
+
+    <!-- 全屏按钮 -->
+    <div class="fullscreen-btn" @click="toggleFullscreen">
+      <el-icon :size="24">
+        <component :is="isFullscreen ? 'Exit' : 'FullScreen'" />
+      </el-icon>
     </div>
 
     <!-- 三列布局 -->
@@ -12,35 +28,63 @@
       <!-- 左侧面板 -->
       <div class="left-panel">
         <BorderBox8 class="panel-container">
-          <LeftPanel
-            :devices="devices"
-            :online-count="onlineCount"
-            @device-click="handleDeviceClick"
-          />
+          <template #default>
+            <div class="panel-header">
+              <Decoration3 style="width:100%; height:15px;" />
+              <span class="panel-title">设备统计</span>
+            </div>
+            <LeftPanel
+              :devices="devices"
+              :online-count="onlineCount"
+              @device-click="handleDeviceClick"
+            />
+          </template>
         </BorderBox8>
       </div>
 
       <!-- 中间3D场景区 -->
       <div class="center-panel">
-        <BorderBox1 class="scene-container">
+        <BorderBox11 title="3D场景可视化" :title-width="200" class="scene-container">
           <div ref="canvasContainer" class="canvas-wrapper"></div>
           <!-- 场景内装饰 -->
-          <div class="scene-decoration">
-            <Decoration2 style="width:90%; height:5px; margin:10px auto;" />
+          <div class="scene-decoration-top">
+            <Decoration2 style="width:90%; height:5px; margin:0 auto;" />
           </div>
-        </BorderBox1>
+          <div class="scene-decoration-bottom">
+            <Decoration10 style="width:80%; height:5px; margin:0 auto;" />
+          </div>
+          <!-- 场景角落装饰 -->
+          <div class="corner-decoration top-left">
+            <Decoration12 style="width:40px; height:40px;" />
+          </div>
+          <div class="corner-decoration top-right">
+            <Decoration12 style="width:40px; height:40px;" />
+          </div>
+          <div class="corner-decoration bottom-left">
+            <Decoration12 style="width:40px; height:40px;" />
+          </div>
+          <div class="corner-decoration bottom-right">
+            <Decoration12 style="width:40px; height:40px;" />
+          </div>
+        </BorderBox11>
       </div>
 
       <!-- 右侧面板 -->
       <div class="right-panel">
         <BorderBox8 :reverse="true" class="panel-container">
-          <RightPanel
-            :devices="devices"
-            :selected-device="selectedDevice"
-            @device-click="handleDeviceClick"
-            @edit-device="handleEditDevice"
-            @view-data="handleViewData"
-          />
+          <template #default>
+            <div class="panel-header">
+              <Decoration3 style="width:100%; height:15px;" />
+              <span class="panel-title">设备列表</span>
+            </div>
+            <RightPanel
+              :devices="devices"
+              :selected-device="selectedDevice"
+              @device-click="handleDeviceClick"
+              @edit-device="handleEditDevice"
+              @view-data="handleViewData"
+            />
+          </template>
         </BorderBox8>
       </div>
     </div>
@@ -70,10 +114,12 @@ import { getAllDevices } from '@/api/device'
 import { ElMessage } from 'element-plus'
 
 const router = useRouter()
+const dashboardRef = ref(null)
 const canvasContainer = ref(null)
 const devices = ref([])
 const detailDrawer = ref(false)
 const selectedDevice = ref(null)
+const isFullscreen = ref(false)
 
 let scene, camera, renderer, controls
 let animationId
@@ -89,6 +135,22 @@ const devicesWithPosition = computed(() => {
 const onlineCount = computed(() => {
   return devices.value.filter(d => d.status === 'ONLINE').length
 })
+
+// 切换全屏
+const toggleFullscreen = () => {
+  if (!document.fullscreenElement) {
+    dashboardRef.value?.requestFullscreen().catch(err => {
+      ElMessage.error(`全屏失败: ${err.message}`)
+    })
+  } else {
+    document.exitFullscreen()
+  }
+}
+
+// 监听全屏变化
+const onFullscreenChange = () => {
+  isFullscreen.value = !!document.fullscreenElement
+}
 
 // 初始化Three.js场景
 const initScene = () => {
@@ -255,6 +317,8 @@ onMounted(() => {
   initScene()
   loadDevices()
   renderer.domElement.addEventListener('click', onMouseClick)
+  // 监听全屏变化事件
+  document.addEventListener('fullscreenchange', onFullscreenChange)
 })
 
 onBeforeUnmount(() => {
@@ -262,6 +326,7 @@ onBeforeUnmount(() => {
     resizeObserver.disconnect()
   }
   renderer.domElement.removeEventListener('click', onMouseClick)
+  document.removeEventListener('fullscreenchange', onFullscreenChange)
   cancelAnimationFrame(animationId)
 
   if (renderer) {
@@ -279,6 +344,21 @@ onBeforeUnmount(() => {
   background: linear-gradient(135deg, #0a0e1a 0%, #1a1f3a 100%);
   padding: 16px;
   box-sizing: border-box;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 全屏模式样式 */
+.visualization-dashboard.fullscreen {
+  padding: 8px;
+}
+
+.visualization-dashboard.fullscreen .header-title {
+  height: 50px;
+}
+
+.visualization-dashboard.fullscreen .title-text {
+  font-size: 24px;
 }
 
 .header-title {
@@ -288,6 +368,14 @@ onBeforeUnmount(() => {
   gap: 20px;
   height: 60px;
   flex-shrink: 0;
+  position: relative;
+}
+
+.title-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
 }
 
 .title-text {
@@ -300,12 +388,52 @@ onBeforeUnmount(() => {
   letter-spacing: 4px;
 }
 
+.title-decoration {
+  opacity: 0.8;
+}
+
+/* 全屏按钮 */
+.fullscreen-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: rgba(66, 211, 146, 0.1);
+  border: 1px solid rgba(66, 211, 146, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s;
+  z-index: 100;
+  color: #42d392;
+}
+
+.fullscreen-btn:hover {
+  background: rgba(66, 211, 146, 0.2);
+  border-color: rgba(66, 211, 146, 0.5);
+  transform: scale(1.05);
+}
+
+.visualization-dashboard.fullscreen .fullscreen-btn {
+  top: 8px;
+  right: 8px;
+}
+
 .main-content {
   flex: 1;
   display: grid;
   grid-template-columns: 320px 1fr 320px;
   gap: 16px;
   min-height: 0;
+}
+
+/* 全屏模式下的布局调整 */
+.visualization-dashboard.fullscreen .main-content {
+  gap: 12px;
+  grid-template-columns: 380px 1fr 380px;
 }
 
 .left-panel,
@@ -319,6 +447,26 @@ onBeforeUnmount(() => {
   flex: 1;
   width: 100%;
   height: 100%;
+  position: relative;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+}
+
+.panel-title {
+  font-size: 14px;
+  font-weight: bold;
+  color: #42d392;
+  letter-spacing: 2px;
 }
 
 .center-panel {
@@ -338,9 +486,19 @@ onBeforeUnmount(() => {
   position: absolute;
   top: 0;
   left: 0;
+  z-index: 1;
 }
 
-.scene-decoration {
+.scene-decoration-top {
+  position: absolute;
+  top: 40px;
+  left: 0;
+  right: 0;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.scene-decoration-bottom {
   position: absolute;
   bottom: 20px;
   left: 0;
@@ -349,10 +507,43 @@ onBeforeUnmount(() => {
   pointer-events: none;
 }
 
+.corner-decoration {
+  position: absolute;
+  z-index: 5;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.corner-decoration.top-left {
+  top: 50px;
+  left: 20px;
+}
+
+.corner-decoration.top-right {
+  top: 50px;
+  right: 20px;
+}
+
+.corner-decoration.bottom-left {
+  bottom: 30px;
+  left: 20px;
+}
+
+.corner-decoration.bottom-right {
+  bottom: 30px;
+  right: 20px;
+}
+
 /* DataV边框内部容器样式调整 */
 :deep(.dv-border-box-content) {
   display: flex !important;
   flex-direction: column !important;
   height: 100% !important;
+  position: relative !important;
+}
+
+/* 全屏模式下确保内容不被裁剪 */
+.visualization-dashboard.fullscreen :deep(.dv-border-box-content) {
+  overflow: hidden !important;
 }
 </style>

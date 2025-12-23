@@ -223,7 +223,7 @@ watch(() => props.devices, () => {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: 16px;
+  padding: 50px 16px 16px 16px; /* 顶部留出panel-header空间 */
   height: 100%;
   overflow-y: auto;
 }
