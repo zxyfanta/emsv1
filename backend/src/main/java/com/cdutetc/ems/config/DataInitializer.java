@@ -144,6 +144,8 @@ public class DataInitializer implements CommandLineRunner {
         radiationDevice.setInstallDate(LocalDateTime.now().minusMonths(1));
         radiationDevice.setLastOnlineAt(LocalDateTime.now());
         radiationDevice.setCompany(company);
+        radiationDevice.setPositionX(30);  // 3D场景位置: -8
+        radiationDevice.setPositionY(30);  // 3D场景位置: -8
 
         Device savedRadiationDevice = deviceRepository.save(radiationDevice);
         log.info("创建辐射监测设备: {} (ID: {})", savedRadiationDevice.getDeviceCode(), savedRadiationDevice.getId());
@@ -162,6 +164,8 @@ public class DataInitializer implements CommandLineRunner {
         environmentDevice.setInstallDate(LocalDateTime.now().minusMonths(1));
         environmentDevice.setLastOnlineAt(LocalDateTime.now());
         environmentDevice.setCompany(company);
+        environmentDevice.setPositionX(70);  // 3D场景位置: +8
+        environmentDevice.setPositionY(50);  // 3D场景位置: 0
 
         Device savedEnvironmentDevice = deviceRepository.save(environmentDevice);
         log.info("创建环境监测设备: {} (ID: {})", savedEnvironmentDevice.getDeviceCode(), savedEnvironmentDevice.getId());
@@ -180,6 +184,8 @@ public class DataInitializer implements CommandLineRunner {
         radiationDevice2.setInstallDate(LocalDateTime.now().minusMonths(2));
         radiationDevice2.setLastOnlineAt(LocalDateTime.now().minusHours(1));
         radiationDevice2.setCompany(company);
+        radiationDevice2.setPositionX(50);  // 3D场景位置: 0 (中心)
+        radiationDevice2.setPositionY(70);  // 3D场景位置: +8
 
         Device savedRadiationDevice2 = deviceRepository.save(radiationDevice2);
         log.info("创建辐射监测设备2: {} (ID: {})", savedRadiationDevice2.getDeviceCode(), savedRadiationDevice2.getId());
