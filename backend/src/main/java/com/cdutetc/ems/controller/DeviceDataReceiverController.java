@@ -73,7 +73,7 @@ public class DeviceDataReceiverController {
             data.setBatvolt(request.getBatvolt());
             data.setTime(request.getTime());
             data.setRecordTime(LocalDateTime.now());
-            data.setTrigger(request.getTrigger());
+            data.setDataTrigger(request.getTrigger());
             data.setMulti(request.getMulti());
             data.setWay(request.getWay());
 

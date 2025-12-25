@@ -47,7 +47,7 @@ public class RadiationDeviceDataResponse {
                 .CPM(data.getCpm())
                 .Batvolt(data.getBatvolt())
                 .time(data.getTime())
-                .trigger(data.getTrigger())
+                .trigger(data.getDataTrigger())
                 .multi(data.getMulti())
                 .way(data.getWay())
                 .bdsLongitude(data.getBdsLongitude())

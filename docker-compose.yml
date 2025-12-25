@@ -1,27 +1,6 @@
-# EMS测试环境Docker配置 - 仅包含数据库和MQTT broker，供本地Spring Boot访问
+# EMS测试环境Docker配置 - MQTT broker 和设备模拟器
 
 services:
-  # H2数据库服务器 - 独立运行供本地Spring Boot访问
-  h2-database:
-    image: buildo/h2database:latest
-    container_name: ems-h2-database
-    restart: unless-stopped
-    ports:
-      - "8082:8082"      # H2 Web控制台端口
-      - "9092:9092"      # H2 TCP端口
-    environment:
-      - H2_OPTIONS=-ifNotExists -tcp -tcpAllowOthers -web -webAllowOthers -webPort 8082 -tcpPort 9092
-    volumes:
-      - h2_data:/opt/h2-data
-    networks:
-      - ems-network
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8082 || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 15s
-
   # Mosquitto MQTT Broker
   mosquitto:
     image: eclipse-mosquitto:latest
@@ -71,15 +50,45 @@ services:
       retries: 5
       start_period: 45s
 
+  # MySQL 8.0 数据库
+  mysql:
+    image: mysql:8.0
+    container_name: ems-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ems_root_pass
+      MYSQL_DATABASE: ems_db
+      MYSQL_USER: ems_user
+      MYSQL_PASSWORD: ems_pass
+      # MySQL 配置优化
+      MYSQL_CHARACTER_SET_SERVER: utf8mb4
+      MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - ems-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pems_root_pass"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-authentication-plugin=mysql_native_password
+
 # 数据卷定义
 volumes:
-  h2_data:
-    driver: local
   nodered_data:
     driver: local
   mosquitto_data:
     driver: local
   mosquitto_log:
+    driver: local
+  mysql_data:
     driver: local
 
 # 网络定义

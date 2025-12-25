@@ -205,7 +205,7 @@ public class MqttMessageListener implements MqttCallback {
                     data.setTime(rootNode.get("time").asText());
                 }
                 if (rootNode.has("trigger")) {
-                    data.setTrigger(rootNode.get("trigger").asInt());
+                    data.setDataTrigger(rootNode.get("trigger").asInt());
                 }
                 if (rootNode.has("multi")) {
                     data.setMulti(rootNode.get("multi").asInt());

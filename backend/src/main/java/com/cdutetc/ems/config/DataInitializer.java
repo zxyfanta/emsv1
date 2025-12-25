@@ -237,7 +237,7 @@ public class DataInitializer implements CommandLineRunner {
             data.setBatvolt(3.7 + Math.random() * 0.3); // 3.7-4.0之间的随机电压
             data.setTime(recordTime.toString());
             data.setRecordTime(recordTime);
-            data.setTrigger(1);
+            data.setDataTrigger(1);
             data.setMulti(1);
             data.setWay(1);
             data.setBdsLongitude(String.valueOf(116.4074 + Math.random() * 0.01)); // 北京经纬度附近
@@ -267,7 +267,7 @@ public class DataInitializer implements CommandLineRunner {
             data.setBatvolt(3.6);
             data.setTime(recordTime.toString());
             data.setRecordTime(recordTime);
-            data.setTrigger(1);
+            data.setDataTrigger(1);
             data.setMulti(1);
             data.setWay(1);
 

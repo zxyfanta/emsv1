@@ -48,8 +48,8 @@ public class RadiationDeviceData extends BaseEntity {
     @Column(name = "time", length = 20)
     private String time;
 
-    @Column(name = "trigger")
-    private Integer trigger;
+    @Column(name = "data_trigger")
+    private Integer dataTrigger;
 
     @Column(name = "multi")
     private Integer multi;
