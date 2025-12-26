@@ -12,6 +12,14 @@
         <!-- 待激活设备 -->
         <el-tab-pane label="待激活设备" name="pending">
           <el-alert
+            title="待激活设备包括通过批量导入生成激活码的设备，以及其他方式创建的待激活设备"
+            type="info"
+            :closable="false"
+            show-icon
+            style="margin-bottom: 15px"
+          />
+
+          <el-alert
             v-if="pendingDevices.length === 0"
             title="暂无待激活设备"
             type="info"
@@ -65,12 +73,14 @@
             <el-table-column label="操作" width="100" fixed="right">
               <template #default="{ row }">
                 <el-button
+                  v-if="row.activationCode && row.activationCode !== '无激活码'"
                   type="primary"
                   size="small"
                   @click="copyCode(row.activationCode)"
                 >
                   复制激活码
                 </el-button>
+                <el-tag v-else type="info" size="small">无激活码</el-tag>
               </template>
             </el-table-column>
           </el-table>
@@ -82,6 +92,14 @@
 
         <!-- 已激活设备 -->
         <el-tab-pane label="已激活设备" name="activated">
+          <el-alert
+            title="已激活设备包括所有状态为已激活的设备，无论是否通过激活码激活"
+            type="info"
+            :closable="false"
+            show-icon
+            style="margin-bottom: 15px"
+          />
+
           <el-alert
             v-if="activatedDevices.length === 0"
             title="暂无已激活设备"
@@ -147,7 +165,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Refresh } from '@element-plus/icons-vue'
-import { getPendingDevices, getActivatedDevices } from '@/api/device'
+import { getDeviceList } from '@/api/device'
 
 const router = useRouter()
 
@@ -173,11 +191,24 @@ const loadData = async () => {
 // 加载待激活设备
 const loadPendingDevices = async () => {
   try {
-    const res = await getPendingDevices()
-    if (res.code === 200) {
-      pendingDevices.value = res.data || []
+    // 使用统一的设备查询接口，按激活状态过滤
+    const res = await getDeviceList({ activationStatus: 'PENDING', size: 1000 })
+    if (res.status === 200) {
+      // 处理数据：添加激活码信息（如果有）
+      pendingDevices.value = (res.data.content || []).map(device => ({
+        id: device.id,
+        deviceCode: device.deviceCode,
+        deviceType: device.deviceType,
+        serialNumber: device.serialNumber,
+        manufacturer: device.manufacturer,
+        model: device.model,
+        activationCode: device.activationCode || '无激活码',  // 显示激活码（如果有）
+        generatedAt: device.createdAt,  // 使用创建时间作为生成时间
+        expiresAt: null  // 设备实体没有过期时间字段
+      }))
     }
   } catch (error) {
+    console.error('加载待激活设备失败:', error)
     ElMessage.error('加载待激活设备失败')
   }
 }
@@ -185,11 +216,22 @@ const loadPendingDevices = async () => {
 // 加载已激活设备
 const loadActivatedDevices = async () => {
   try {
-    const res = await getActivatedDevices()
-    if (res.code === 200) {
-      activatedDevices.value = res.data || []
+    // 使用统一的设备查询接口，按激活状态过滤
+    const res = await getDeviceList({ activationStatus: 'ACTIVE', size: 1000 })
+    if (res.status === 200) {
+      // 处理数据结构
+      activatedDevices.value = (res.data.content || []).map(device => ({
+        id: device.id,
+        deviceCode: device.deviceCode,
+        deviceType: device.deviceType,
+        serialNumber: device.serialNumber,
+        company: device.company?.companyName || '未分配',
+        activatedBy: device.updatedBy || '未知',  // 使用更新人作为激活人
+        activatedAt: device.installDate || device.createdAt  // 使用安装时间或创建时间
+      }))
     }
   } catch (error) {
+    console.error('加载已激活设备失败:', error)
     ElMessage.error('加载已激活设备失败')
   }
 }

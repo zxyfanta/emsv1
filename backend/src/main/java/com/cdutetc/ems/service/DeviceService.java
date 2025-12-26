@@ -2,6 +2,7 @@ package com.cdutetc.ems.service;
 
 import com.cdutetc.ems.entity.Company;
 import com.cdutetc.ems.entity.Device;
+import com.cdutetc.ems.entity.enums.DeviceActivationStatus;
 import com.cdutetc.ems.entity.enums.DeviceStatus;
 import com.cdutetc.ems.entity.enums.DeviceType;
 import com.cdutetc.ems.repository.CompanyRepository;
@@ -110,6 +111,16 @@ public class DeviceService {
         log.debug("Getting devices for company: {} with pageable: {}", companyId, pageable);
 
         return deviceRepository.findByCompanyId(companyId, pageable);
+    }
+
+    /**
+     * 按激活状态获取企业设备列表
+     */
+    @Transactional(readOnly = true)
+    public Page<Device> getDevicesByActivationStatus(Long companyId, DeviceActivationStatus activationStatus, Pageable pageable) {
+        log.debug("Getting devices for company: {} with activation status: {}", companyId, activationStatus);
+
+        return deviceRepository.findByCompanyIdAndActivationStatus(companyId, activationStatus, pageable);
     }
 
     /**

@@ -177,6 +177,7 @@ public class DeviceController {
             @RequestParam(defaultValue = "desc") String sortDir,
             @RequestParam(required = false) String deviceType,
             @RequestParam(required = false) String search,
+            @RequestParam(required = false) String activationStatus,
             @RequestParam(required = false) Long companyId) {
         try {
             // 获取当前用户信息
@@ -201,7 +202,12 @@ public class DeviceController {
             Pageable pageable = PageRequest.of(page, size, sort);
 
             Page<Device> devices;
-            if (deviceType != null && !deviceType.isEmpty()) {
+            // 优先级：activationStatus > deviceType > search > 默认
+            if (activationStatus != null && !activationStatus.isEmpty()) {
+                com.cdutetc.ems.entity.enums.DeviceActivationStatus status =
+                        com.cdutetc.ems.entity.enums.DeviceActivationStatus.valueOf(activationStatus.toUpperCase());
+                devices = deviceService.getDevicesByActivationStatus(targetCompanyId, status, pageable);
+            } else if (deviceType != null && !deviceType.isEmpty()) {
                 DeviceType type = DeviceType.valueOf(deviceType.toUpperCase());
                 devices = deviceService.getDevicesByType(targetCompanyId, type, pageable);
             } else if (search != null && !search.isEmpty()) {

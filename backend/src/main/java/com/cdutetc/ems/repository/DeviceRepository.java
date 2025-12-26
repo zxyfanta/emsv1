@@ -178,4 +178,13 @@ public interface DeviceRepository extends JpaRepository<Device, Long> {
      * 按激活状态分页查询
      */
     Page<Device> findByActivationStatus(DeviceActivationStatus activationStatus, Pageable pageable);
+
+    /**
+     * 根据企业ID和激活状态分页查询设备
+     */
+    @Query("SELECT d FROM Device d WHERE d.company.id = :companyId AND d.activationStatus = :activationStatus")
+    Page<Device> findByCompanyIdAndActivationStatus(
+            @Param("companyId") Long companyId,
+            @Param("activationStatus") DeviceActivationStatus activationStatus,
+            Pageable pageable);
 }
