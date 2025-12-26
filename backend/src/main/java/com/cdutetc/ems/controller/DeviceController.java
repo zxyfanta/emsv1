@@ -1,13 +1,15 @@
 package com.cdutetc.ems.controller;
 
+import com.cdutetc.ems.dto.request.DeviceActivationRequest;
 import com.cdutetc.ems.dto.request.DeviceCreateRequest;
 import com.cdutetc.ems.dto.request.DeviceUpdateRequest;
-import com.cdutetc.ems.dto.response.DeviceResponse;
-import com.cdutetc.ems.dto.response.PageResponse;
+import com.cdutetc.ems.dto.request.VerifyActivationCodeRequest;
+import com.cdutetc.ems.dto.response.*;
 import com.cdutetc.ems.entity.Device;
 import com.cdutetc.ems.entity.User;
 import com.cdutetc.ems.entity.enums.DeviceStatus;
 import com.cdutetc.ems.entity.enums.DeviceType;
+import com.cdutetc.ems.service.DeviceActivationService;
 import com.cdutetc.ems.service.DeviceService;
 import com.cdutetc.ems.util.ApiResponse;
 import jakarta.validation.Valid;
@@ -34,6 +36,7 @@ import org.springframework.web.bind.annotation.*;
 public class DeviceController {
 
     private final DeviceService deviceService;
+    private final DeviceActivationService deviceActivationService;
 
     /**
      * 创建设备
@@ -173,11 +176,25 @@ public class DeviceController {
             @RequestParam(defaultValue = "id") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir,
             @RequestParam(required = false) String deviceType,
-            @RequestParam(required = false) String search) {
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Long companyId) {
         try {
             // 获取当前用户信息
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             User currentUser = (User) authentication.getPrincipal();
+
+            // 管理员可以查看指定企业的设备
+            Long targetCompanyId = companyId;
+            if (targetCompanyId == null) {
+                // 未指定企业时，使用当前用户的企业
+                targetCompanyId = currentUser.getCompany().getId();
+            } else {
+                // 管理员指定企业时，验证权限
+                if (!currentUser.getRole().toString().equals("ADMIN")) {
+                    return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                            .body(ApiResponse.forbidden("只有管理员可以查看其他企业的设备"));
+                }
+            }
 
             Sort sort = sortDir.equalsIgnoreCase("desc") ?
                     Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
@@ -186,11 +203,11 @@ public class DeviceController {
             Page<Device> devices;
             if (deviceType != null && !deviceType.isEmpty()) {
                 DeviceType type = DeviceType.valueOf(deviceType.toUpperCase());
-                devices = deviceService.getDevicesByType(currentUser.getCompany().getId(), type, pageable);
+                devices = deviceService.getDevicesByType(targetCompanyId, type, pageable);
             } else if (search != null && !search.isEmpty()) {
-                devices = deviceService.searchDevices(currentUser.getCompany().getId(), search, pageable);
+                devices = deviceService.searchDevices(targetCompanyId, search, pageable);
             } else {
-                devices = deviceService.getDevices(currentUser.getCompany().getId(), pageable);
+                devices = deviceService.getDevices(targetCompanyId, pageable);
             }
 
             PageResponse<DeviceResponse> response = PageResponse.<DeviceResponse>builder()
@@ -267,6 +284,72 @@ public class DeviceController {
             log.error("Error getting device statistics: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.error("获取设备统计失败，请稍后重试"));
+        }
+    }
+
+    /**
+     * 验证激活码（用于前端实时验证）
+     */
+    @PostMapping("/verify-activation-code")
+    public ResponseEntity<ApiResponse<ActivationCodeInfo>> verifyActivationCode(
+            @RequestBody VerifyActivationCodeRequest request) {
+
+        try {
+            ActivationCodeInfo info = deviceActivationService.verifyActivationCode(request.getActivationCode());
+            return ResponseEntity.ok(ApiResponse.success("激活码验证成功", info));
+
+        } catch (IllegalArgumentException e) {
+            log.warn("激活码验证失败: {}", e.getMessage());
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.badRequest(e.getMessage()));
+
+        } catch (Exception e) {
+            log.error("Error verifying activation code: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("验证激活码失败，请稍后重试"));
+        }
+    }
+
+    /**
+     * 使用激活码注册设备
+     */
+    @PostMapping("/activate")
+    public ResponseEntity<ApiResponse<DeviceResponse>> activateDevice(
+            @Valid @RequestBody DeviceActivationRequest request) {
+
+        try {
+            // 获取当前用户
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            User currentUser = (User) authentication.getPrincipal();
+
+            // 激活设备
+            Device device = deviceActivationService.activateDevice(
+                    request.getActivationCode(),
+                    request.getDeviceName(),
+                    request.getDescription(),
+                    request.getLocation(),
+                    request.getPositionX(),
+                    request.getPositionY(),
+                    currentUser.getCompany().getId(),
+                    currentUser.getId(),
+                    currentUser.getUsername(),
+                    request.getClientIp() != null ? request.getClientIp() : "unknown"
+            );
+
+            log.info("✅ 设备 {} 激活成功，企业: {}, 用户: {}",
+                    device.getDeviceCode(), currentUser.getCompany().getCompanyName(), currentUser.getUsername());
+
+            return ResponseEntity.ok(ApiResponse.success("设备激活成功", DeviceResponse.fromDevice(device)));
+
+        } catch (IllegalArgumentException e) {
+            log.warn("设备激活失败: {}", e.getMessage());
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.badRequest(e.getMessage()));
+
+        } catch (Exception e) {
+            log.error("Error activating device: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("设备激活失败，请稍后重试"));
         }
     }
 }

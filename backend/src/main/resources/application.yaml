@@ -70,7 +70,7 @@ app:
   ems:
     # 数据初始化配置 - 支持Docker环境变量覆盖
     data:
-      initialize: ${EMS_DATA_INITIALIZE:false}  # 是否启用数据初始化（生产环境应设为false）
+      initialize: true  # 临时启用数据初始化（测试用）
 
     # 初始管理员配置
     admin:

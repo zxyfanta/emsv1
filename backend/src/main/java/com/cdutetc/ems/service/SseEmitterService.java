@@ -51,6 +51,7 @@ public class SseEmitterService {
 
     /**
      * 向指定企业的所有连接推送设备数据
+     * 数据结构扁平化：直接将设备数据展开到顶层，避免前端二次解析
      */
     public void broadcastDeviceData(Long companyId, DeviceDataEvent event) {
         CopyOnWriteArrayList<SseEmitter> emitters = companyEmitters.get(companyId);
@@ -58,23 +59,29 @@ public class SseEmitterService {
             return;
         }
 
-        String dataJson;
+        // 构建扁平化的数据负载
+        Map<String, Object> payload = new java.util.HashMap<>();
+        payload.put("deviceCode", event.getDeviceCode());
+        payload.put("deviceType", event.getDeviceType());
+        payload.put("timestamp", event.getTimestamp().toString());
+
+        // 将实际数据直接展开到顶层
         try {
-            dataJson = objectMapper.writeValueAsString(event.getData());
+            @SuppressWarnings("unchecked")
+            Map<String, Object> actualData = objectMapper.readValue(
+                objectMapper.writeValueAsString(event.getData()),
+                Map.class
+            );
+            payload.putAll(actualData);
         } catch (Exception e) {
-            log.error("序列化事件数据失败", e);
+            log.error("解析设备数据失败", e);
             return;
         }
 
         // 推送给该企业的所有连接
         emitters.forEach(emitter -> {
             try {
-                sendMessage(emitter, event.getEventType(), Map.of(
-                    "deviceCode", event.getDeviceCode(),
-                    "deviceType", event.getDeviceType(),
-                    "data", dataJson,
-                    "timestamp", event.getTimestamp().toString()
-                ));
+                sendMessage(emitter, event.getEventType(), payload);
             } catch (Exception e) {
                 log.error("SSE推送失败，将移除该连接", e);
                 removeEmitter(companyId, emitter);

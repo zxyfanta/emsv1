@@ -61,11 +61,11 @@ export const getDeviceStatistics = () => {
 }
 
 // 获取所有设备（用于可视化大屏）
-export const getAllDevices = () => {
+export const getAllDevices = (params = {}) => {
   return request({
     url: '/devices',
     method: 'get',
-    params: { size: 1000 }  // 获取所有设备
+    params: { size: 1000, ...params }  // 合并参数
   })
 }
 
@@ -84,5 +84,52 @@ export const getEnvironmentDeviceLatestData = (deviceCode) => {
     url: '/environment-data/latest',
     method: 'get',
     params: { deviceCode }
+  })
+}
+
+// ============ 设备激活相关接口 ============
+
+// 验证激活码
+export const verifyActivationCode = (code) => {
+  return request({
+    url: '/devices/verify-activation-code',
+    method: 'post',
+    data: { activationCode: code }
+  })
+}
+
+// 使用激活码激活设备
+export const activateDevice = (data) => {
+  return request({
+    url: '/devices/activate',
+    method: 'post',
+    data
+  })
+}
+
+// ============ 管理员接口 ============
+
+// 批量导入设备
+export const batchImportDevices = (items) => {
+  return request({
+    url: '/admin/devices/batch-import',
+    method: 'post',
+    data: { items }
+  })
+}
+
+// 获取待激活设备列表
+export const getPendingDevices = () => {
+  return request({
+    url: '/admin/devices/pending',
+    method: 'get'
+  })
+}
+
+// 获取已激活设备列表
+export const getActivatedDevices = () => {
+  return request({
+    url: '/admin/devices/activated',
+    method: 'get'
   })
 }

@@ -30,8 +30,14 @@ export class DeviceSSE {
     }
 
     try {
-      // 创建SSE连接（使用相对路径，自动添加 /api 前缀）
-      this.eventSource = new EventSource('/api/sse/subscribe')
+      // 创建SSE连接
+      // 注意：EventSource 不支持自定义请求头，所以 token 通过 URL 参数传递
+      const token = localStorage.getItem('token')
+      if (!token) {
+        console.error('[SSE] 未找到 Token，无法建立 SSE 连接')
+        return
+      }
+      this.eventSource = new EventSource('/api/sse/subscribe?token=' + encodeURIComponent(token))
 
       // 监听连接成功事件
       this.eventSource.addEventListener('connected', (event) => {

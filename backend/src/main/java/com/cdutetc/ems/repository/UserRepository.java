@@ -89,4 +89,22 @@ public interface UserRepository extends JpaRepository<User, Long> {
      */
     @Query("SELECT COUNT(u) FROM User u WHERE u.status = 'ACTIVE'")
     long countActiveUsers();
+
+    /**
+     * 查询所有用户并预加载企业信息（用于分页列表）
+     */
+    @Query("SELECT u FROM User u LEFT JOIN FETCH u.company")
+    Page<User> findAllWithCompany(Pageable pageable);
+
+    /**
+     * 根据企业ID查询用户并预加载企业信息（用于分页列表）
+     */
+    @Query("SELECT u FROM User u LEFT JOIN FETCH u.company WHERE u.company.id = :companyId")
+    Page<User> findByCompanyIdWithCompany(@Param("companyId") Long companyId, Pageable pageable);
+
+    /**
+     * 根据用户名模糊查询并预加载企业信息
+     */
+    @Query("SELECT u FROM User u LEFT JOIN FETCH u.company WHERE u.username LIKE %:username%")
+    Page<User> findByUsernameContainingWithCompany(@Param("username") String username, Pageable pageable);
 }

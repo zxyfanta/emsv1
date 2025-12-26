@@ -3,7 +3,7 @@
     <el-card>
       <template #header>
         <div class="card-header">
-          <span>{{ isEdit ? '编辑设备' : '添加设备' }}</span>
+          <span>{{ isEdit ? '编辑设备' : '手动录入设备' }}</span>
           <el-button @click="handleBack">返回</el-button>
         </div>
       </template>
@@ -96,9 +96,14 @@ import {
   updateDevice
 } from '@/api/device'
 import { ElMessage } from 'element-plus'
+import { useUserStore } from '@/store/user'
 
 const router = useRouter()
 const route = useRoute()
+const userStore = useUserStore()
+
+// 管理员权限检查
+const isAdmin = computed(() => userStore.isAdmin)
 
 const formRef = ref()
 const loading = ref(false)
@@ -175,6 +180,13 @@ const handleBack = () => {
 }
 
 onMounted(() => {
+  // 权限检查：非管理员不能手动录入设备
+  if (!isAdmin.value && !isEdit.value) {
+    ElMessage.warning('您没有权限手动录入设备，请使用激活功能')
+    router.push('/devices/activate')
+    return
+  }
+
   if (isEdit.value) {
     loadDeviceDetail()
   }

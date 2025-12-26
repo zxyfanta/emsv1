@@ -1,6 +1,7 @@
 package com.cdutetc.ems.repository;
 
 import com.cdutetc.ems.entity.Device;
+import com.cdutetc.ems.entity.enums.DeviceActivationStatus;
 import com.cdutetc.ems.entity.enums.DeviceStatus;
 import com.cdutetc.ems.entity.enums.DeviceType;
 import org.springframework.data.domain.Page;
@@ -162,4 +163,19 @@ public interface DeviceRepository extends JpaRepository<Device, Long> {
      */
     @Query("SELECT COUNT(d) FROM Device d WHERE d.company.id = :companyId AND d.status = :status")
     long countByCompanyIdAndStatus(@Param("companyId") Long companyId, @Param("status") DeviceStatus status);
+
+    /**
+     * 检查序列号是否存在
+     */
+    boolean existsBySerialNumber(String serialNumber);
+
+    /**
+     * 按激活状态查询
+     */
+    List<Device> findByActivationStatus(DeviceActivationStatus activationStatus);
+
+    /**
+     * 按激活状态分页查询
+     */
+    Page<Device> findByActivationStatus(DeviceActivationStatus activationStatus, Pageable pageable);
 }

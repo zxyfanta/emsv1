@@ -4,10 +4,16 @@
       <template #header>
         <div class="card-header">
           <span>设备列表</span>
-          <el-button type="primary" @click="handleCreate" v-if="isAdmin">
-            <el-icon><Plus /></el-icon>
-            添加设备
-          </el-button>
+          <div class="header-actions">
+            <el-button type="success" @click="handleActivate">
+              <el-icon><Plus /></el-icon>
+              激活设备
+            </el-button>
+            <el-button type="primary" @click="handleCreate" v-if="isAdmin">
+              <el-icon><Plus /></el-icon>
+              手动录入
+            </el-button>
+          </div>
         </div>
       </template>
 
@@ -58,8 +64,8 @@
         <el-table-column label="操作" width="180" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="handleView(row)">查看</el-button>
-            <el-button link type="primary" @click="handleEdit(row)" v-if="isAdmin">编辑</el-button>
-            <el-button link type="danger" @click="handleDelete(row)" v-if="isAdmin">删除</el-button>
+            <el-button link type="primary" @click="handleEdit(row)">编辑</el-button>
+            <el-button link type="danger" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -143,6 +149,10 @@ const handleCreate = () => {
   router.push('/devices/create')
 }
 
+const handleActivate = () => {
+  router.push('/devices/activate')
+}
+
 const handleView = (row) => {
   // TODO: 显示设备详情对话框
   ElMessage.info('查看功能待实现')
@@ -206,6 +216,11 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.header-actions {
+  display: flex;
+  gap: 10px;
 }
 
 .search-form {

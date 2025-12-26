@@ -47,7 +47,8 @@ public class AuthController {
      * 用户登录
      */
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<ApiResponse<LoginResponse>> login(
+            @Valid @RequestBody LoginRequest loginRequest) {
         try {
             // 认证用户
             Authentication authentication = authenticationManager.authenticate(
@@ -64,14 +65,14 @@ public class AuthController {
 
             // 构建响应
             LoginResponse.UserInfo userInfo = LoginResponse.UserInfo.fromUser(user);
-            LoginResponse response = LoginResponse.builder()
+            LoginResponse loginResponse = LoginResponse.builder()
                     .token(token)
                     .expiresIn(jwtExpiration)
                     .userInfo(userInfo)
                     .build();
 
             log.info("User {} logged in successfully", user.getUsername());
-            return ResponseEntity.ok(ApiResponse.success("登录成功", response));
+            return ResponseEntity.ok(ApiResponse.success("登录成功", loginResponse));
 
         } catch (BadCredentialsException e) {
             log.warn("Login failed for user {}: {}", loginRequest.getUsername(), e.getMessage());

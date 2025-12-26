@@ -1,13 +1,5 @@
 <template>
   <div class="root-container">
-    <!-- 返回按钮（独立路由模式下显示） -->
-    <div v-if="isStandalone" class="back-btn" @click="goBack">
-      <el-icon :size="20">
-        <ArrowLeft />
-      </el-icon>
-      <span>返回系统</span>
-    </div>
-
     <dv-full-screen-container>
       <div
         ref="dashboardRef"
@@ -27,6 +19,24 @@
           <dv-decoration-10 :color="['#1890ff']" style="width:180px; height:3px; margin-top:4px;" />
         </div>
       </dv-border-box-13>
+
+      <!-- 企业选择器（仅管理员可见）- 固定悬浮 -->
+      <div v-if="isAdmin" class="company-selector-fixed">
+        <el-select
+          v-model="selectedCompanyId"
+          placeholder="选择企业"
+          @change="handleCompanyChange"
+          size="small"
+          popper-class="company-select-dropdown"
+        >
+          <el-option
+            v-for="company in companies"
+            :key="company.id"
+            :label="company.companyName"
+            :value="company.id"
+          />
+        </el-select>
+      </div>
 
       <!-- 右侧装饰 -->
       <dv-decoration-8 :color="['#1890ff', '#096dd9']" style="width:250px; height:40px;" />
@@ -106,7 +116,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
@@ -117,14 +127,26 @@ import DeviceDetailPanel from '@/components/visualization/DeviceDetailPanel.vue'
 import LeftPanel from '@/components/visualization/LeftPanel.vue'
 import RightPanel from '@/components/visualization/RightPanel.vue'
 import { getAllDevices } from '@/api/device'
+import { getCompanyList } from '@/api/company'
+import { useUserStore } from '@/store/user'
 import { ElMessage } from 'element-plus'
 
 const router = useRouter()
+const userStore = useUserStore()
 const dashboardRef = ref(null)
 const canvasContainer = ref(null)
 const devices = ref([])
 const detailDrawer = ref(false)
 const selectedDevice = ref(null)
+
+// 企业相关状态（管理员可用）
+const companies = ref([])
+const selectedCompanyId = ref(null)
+
+// 检查是否为管理员
+const isAdmin = computed(() => {
+  return userStore.userRole === 'ADMIN'
+})
 
 // 检查是否为独立路由模式（不使用 MainLayout）
 const isStandalone = computed(() => {
@@ -277,10 +299,49 @@ const onMouseClick = (event) => {
   })
 }
 
+// 加载企业列表（仅管理员）
+const loadCompanies = async () => {
+  // 调试日志：检查用户角色
+  console.log('[企业选择器调试] 当前用户角色:', userStore.userRole)
+  console.log('[企业选择器调试] isAdmin值:', isAdmin.value)
+  console.log('[企业选择器调试] userInfo:', userStore.userInfo)
+
+  if (!isAdmin.value) {
+    console.warn('[企业选择器调试] 非管理员用户，跳过企业列表加载')
+    return
+  }
+
+  try {
+    console.log('[企业选择器调试] 开始加载企业列表...')
+    const res = await getCompanyList({ size: 1000 })
+    console.log('[企业选择器调试] 企业列表响应:', res)
+
+    if (res.status === 200) {
+      companies.value = res.data.content || []
+      console.log('[企业选择器调试] 解析后的企业列表:', companies.value)
+
+      // 默认选择第一个企业
+      if (companies.value.length > 0 && !selectedCompanyId.value) {
+        selectedCompanyId.value = companies.value[0].id
+        console.log('[企业选择器调试] 默认选择企业ID:', selectedCompanyId.value)
+      }
+    }
+  } catch (error) {
+    console.error('[企业选择器调试] 加载企业列表失败:', error)
+  }
+}
+
 // 加载设备数据
 const loadDevices = async () => {
   try {
-    const res = await getAllDevices()
+    // 管理员：根据选择的企业过滤设备
+    // 普通用户：加载自己企业的设备
+    const params = { size: 1000 }
+    if (isAdmin.value && selectedCompanyId.value) {
+      params.companyId = selectedCompanyId.value
+    }
+
+    const res = await getAllDevices(params)
     if (res.status === 200) {
       devices.value = res.data.content || []
       // 更新3D设备模型
@@ -316,7 +377,23 @@ const goBack = () => {
   router.push('/dashboard')
 }
 
+// 处理企业切换
+const handleCompanyChange = (companyId) => {
+  selectedCompanyId.value = companyId
+  loadDevices()
+}
+
+// 监听企业切换
+watch(selectedCompanyId, () => {
+  if (selectedCompanyId.value) {
+    loadDevices()
+  }
+})
+
 onMounted(async () => {
+  // 先加载企业列表（如果是管理员）
+  await loadCompanies()
+
   // 立即加载设备数据，不依赖 canvasContainer 的就绪状态
   loadDevices()
 
@@ -404,33 +481,6 @@ onBeforeUnmount(() => {
   overflow: hidden;
 }
 
-/* 返回按钮 */
-.back-btn {
-  position: fixed;
-  top: 20px;
-  left: 20px;
-  z-index: 10000;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  background: rgba(24, 144, 255, 0.15);
-  border: 1px solid rgba(24, 144, 255, 0.4);
-  border-radius: 8px;
-  color: #1890ff;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.3s;
-  backdrop-filter: blur(10px);
-}
-
-.back-btn:hover {
-  background: rgba(24, 144, 255, 0.25);
-  border-color: rgba(24, 144, 255, 0.6);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);
-}
-
 .visualization-dashboard {
   width: 100%;
   height: 100%; /* 改为 100%，适配 DataV 全屏容器 */
@@ -466,6 +516,67 @@ onBeforeUnmount(() => {
   font-weight: bold;
   color: #e8e8e8;
   letter-spacing: 4px;
+}
+
+/* 固定悬浮企业选择器 */
+.company-selector-fixed {
+  position: fixed;
+  top: 20px;
+  right: 30px;
+  z-index: 1000;
+  background: rgba(10, 25, 47, 0.85);
+  border: 1px solid rgba(24, 144, 255, 0.4);
+  border-radius: 8px;
+  padding: 8px 12px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.2);
+  transition: all 0.3s;
+}
+
+.company-selector-fixed:hover {
+  background: rgba(10, 25, 47, 0.95);
+  border-color: rgba(24, 144, 255, 0.6);
+  box-shadow: 0 6px 16px rgba(24, 144, 255, 0.3);
+}
+
+.company-selector-fixed :deep(.el-select__wrapper) {
+  background-color: rgba(24, 144, 255, 0.1);
+  border: 1px solid rgba(24, 144, 255, 0.3);
+  border-radius: 4px;
+  box-shadow: none;
+}
+
+.company-selector-fixed :deep(.el-input__inner) {
+  background-color: transparent;
+  color: #e8e8e8;
+  border: none;
+  font-size: 14px;
+}
+
+.company-selector-fixed :deep(.el-select__caret) {
+  color: #1890ff;
+}
+
+/* 下拉面板样式 */
+.company-select-dropdown {
+  background: rgba(10, 25, 47, 0.95) !important;
+  border: 1px solid rgba(24, 144, 255, 0.4) !important;
+}
+
+.company-select-dropdown :deep(.el-select-dropdown__item) {
+  color: #e8e8e8;
+  background: transparent;
+}
+
+.company-select-dropdown :deep(.el-select-dropdown__item:hover) {
+  background: rgba(24, 144, 255, 0.2);
+  color: #1890ff;
+}
+
+.company-select-dropdown :deep(.el-select-dropdown__item.is-selected) {
+  background: rgba(24, 144, 255, 0.3);
+  color: #1890ff;
+  font-weight: bold;
 }
 
 .title-decoration {

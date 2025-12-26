@@ -5,43 +5,18 @@
         <el-icon><DataLine /></el-icon>
         实时信息
       </h3>
-      <el-input
-        v-model="searchQuery"
-        placeholder="搜索设备名称/编码"
-        prefix-icon="Search"
-        size="small"
-        clearable
-        class="search-input"
-      />
+      <div v-if="selectedDevice" class="device-indicator">
+        <span class="device-name">{{ selectedDevice.deviceName }}</span>
+        <el-tag
+          :type="selectedDevice.deviceType === 'RADIATION_MONITOR' ? 'danger' : 'success'"
+          size="small"
+        >
+          {{ selectedDevice.deviceType === 'RADIATION_MONITOR' ? '辐射' : '环境' }}
+        </el-tag>
+      </div>
     </div>
 
-    <!-- 设备选择列表 -->
-    <el-scrollbar class="device-list-container">
-      <div v-if="filteredDevices.length === 0" class="empty-state">
-        <el-empty description="暂无设备" :image-size="60" />
-      </div>
-      <div v-else class="device-list">
-        <div
-          v-for="device in filteredDevices"
-          :key="device.id"
-          :class="['device-list-item', { active: selectedDevice?.id === device.id }]"
-          @click="selectDevice(device)"
-        >
-          <div class="device-info">
-            <div class="device-name">{{ device.deviceName }}</div>
-            <div class="device-code">{{ device.deviceCode }}</div>
-          </div>
-          <el-tag
-            :type="device.deviceType === 'RADIATION_MONITOR' ? 'danger' : 'success'"
-            size="small"
-          >
-            {{ device.deviceType === 'RADIATION_MONITOR' ? '辐射' : '环境' }}
-          </el-tag>
-        </div>
-      </div>
-    </el-scrollbar>
-
-    <!-- CPM数据显示区域 -->
+    <!-- 数据显示区域 -->
     <div class="data-display-area">
       <div v-if="!selectedDevice" class="no-selection">
         <el-icon :size="48"><Select /></el-icon>
@@ -123,30 +98,12 @@ const props = defineProps({
 })
 
 const visualizationStore = useVisualizationStore()
-const searchQuery = ref('')
 const loading = ref(false)
 const latestData = ref(null)
 let unsubscribe = null // SSE取消订阅函数
 
-// 选中的设备
+// 选中的设备（从 store 获取）
 const selectedDevice = computed(() => visualizationStore.selectedDevice)
-
-// 过滤设备
-const filteredDevices = computed(() => {
-  if (!searchQuery.value) {
-    return props.devices
-  }
-  const query = searchQuery.value.toLowerCase()
-  return props.devices.filter(device =>
-    device.deviceName?.toLowerCase().includes(query) ||
-    device.deviceCode?.toLowerCase().includes(query)
-  )
-})
-
-// 选择设备
-const selectDevice = (device) => {
-  visualizationStore.setSelectedDevice(device)
-}
 
 // 获取设备最新数据（初始加载时使用）
 const fetchLatestData = async () => {
@@ -164,9 +121,10 @@ const fetchLatestData = async () => {
     }
 
     if (response.status === 200) {
+      // 后端返回的字段名已经是小写，直接使用
       latestData.value = response.data
       // 缓存数据
-      visualizationStore.cacheRealtimeData(selectedDevice.value.deviceCode, response.data)
+      visualizationStore.cacheRealtimeData(selectedDevice.value.deviceCode, latestData.value)
     }
   } catch (error) {
     console.error('获取实时数据失败:', error)
@@ -181,6 +139,7 @@ const fetchLatestData = async () => {
 }
 
 // 处理SSE推送的数据
+// SSE数据结构已扁平化，数据直接在顶层，无需二次解析
 const handleSSEMessage = (eventType, data) => {
   if (!selectedDevice.value) return
 
@@ -189,24 +148,22 @@ const handleSSEMessage = (eventType, data) => {
     return
   }
 
-  // 解析数据
+  // 数据已扁平化，直接使用
   try {
-    const parsedData = typeof data.data === 'string' ? JSON.parse(data.data) : data.data
-
     // 根据事件类型更新数据
     if (eventType === 'radiation-data') {
       latestData.value = {
-        cpm: parsedData.cpm,
-        batVolt: parsedData.batVolt,
-        recordTime: parsedData.recordTime
+        cpm: data.cpm,
+        batVolt: data.batVolt,
+        recordTime: data.recordTime || data.timestamp
       }
     } else if (eventType === 'environment-data') {
       latestData.value = {
-        cpm: parsedData.cpm,
-        temperature: parsedData.temperature,
-        wetness: parsedData.wetness,
-        windspeed: parsedData.windspeed,
-        recordTime: parsedData.recordTime
+        cpm: data.cpm,
+        temperature: data.temperature,
+        wetness: data.wetness,
+        windspeed: data.windspeed,
+        recordTime: data.recordTime || data.timestamp
       }
     }
 
@@ -226,6 +183,13 @@ const startSSE = () => {
   // 取消之前的订阅
   if (unsubscribe) {
     unsubscribe()
+  }
+
+  // 确保SSE已初始化
+  const status = sseManager.getStatus()
+  if (!status.connected) {
+    console.warn('[RealtimeInfoSection] SSE未连接，尝试初始化...')
+    sseManager.init()
   }
 
   // 订阅辐射数据和环境数据
@@ -281,7 +245,7 @@ watch(() => visualizationStore.selectedDeviceId, () => {
 // 组件挂载时默认选择第一个在线设备
 onMounted(() => {
   if (!selectedDevice.value && props.devices.length > 0) {
-    selectDevice(props.devices[0])
+    visualizationStore.setSelectedDevice(props.devices[0])
   }
 })
 
@@ -301,6 +265,7 @@ onBeforeUnmount(() => {
 .section-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
   padding: 12px 16px;
   background: rgba(24, 144, 255, 0.1);
@@ -315,74 +280,18 @@ onBeforeUnmount(() => {
   font-size: 16px;
   font-weight: 600;
   color: #1890ff;
-  flex: 1;
 }
 
-.search-input {
-  width: 160px;
-}
-
-.search-input :deep(.el-input__wrapper) {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(24, 144, 255, 0.3);
-}
-
-.search-input :deep(.el-input__inner) {
-  color: #ffffff;
-}
-
-.device-list-container {
-  flex: 1;
-  overflow-y: auto;
-  border-bottom: 1px solid rgba(24, 144, 255, 0.1);
-  max-height: 40%;
-}
-
-.device-list-container :deep(.el-scrollbar__wrap) {
-  overflow-x: hidden;
-}
-
-.device-list {
-  padding: 8px;
-}
-
-.device-list-item {
+.device-indicator {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 10px 12px;
-  margin-bottom: 6px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(24, 144, 255, 0.1);
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.3s;
+  gap: 8px;
 }
 
-.device-list-item:hover {
-  background: rgba(24, 144, 255, 0.1);
-  border-color: rgba(24, 144, 255, 0.3);
-}
-
-.device-list-item.active {
-  background: rgba(24, 144, 255, 0.2);
-  border-color: #1890ff;
-}
-
-.device-info {
-  flex: 1;
-}
-
-.device-name {
+.device-indicator .device-name {
   font-size: 13px;
-  font-weight: 500;
   color: #ffffff;
-  margin-bottom: 2px;
-}
-
-.device-code {
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.5);
+  font-weight: 500;
 }
 
 .data-display-area {

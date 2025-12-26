@@ -104,19 +104,19 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(readOnly = true)
     public Page<User> findAll(Pageable pageable) {
-        return userRepository.findAll(pageable);
+        return userRepository.findAllWithCompany(pageable);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<User> findByCompanyId(Long companyId, Pageable pageable) {
-        return userRepository.findByCompanyId(companyId, pageable);
+        return userRepository.findByCompanyIdWithCompany(companyId, pageable);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<User> findByUsernameContaining(String username, Pageable pageable) {
-        return userRepository.findByUsernameContaining(username, pageable);
+        return userRepository.findByUsernameContainingWithCompany(username, pageable);
     }
 
     @Override

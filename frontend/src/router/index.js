@@ -27,17 +27,53 @@ const routes = [
         component: () => import('@/views/Dashboard.vue'),
         meta: { title: '数据概览', icon: 'DataAnalysis' }
       },
+      // ========== 设备管理（所有用户）==========
       {
         path: 'devices',
+        redirect: '/devices/list',
+        meta: { title: '设备管理', icon: 'Monitor' }
+      },
+      {
+        path: 'devices/list',
         name: 'DeviceList',
         component: () => import('@/views/devices/DeviceList.vue'),
-        meta: { title: '设备管理', icon: 'Monitor' }
+        meta: { title: '设备列表', icon: 'Monitor', parent: '设备管理' }
+      },
+      {
+        path: 'devices/activate',
+        name: 'DeviceActivate',
+        component: () => import('@/views/devices/DeviceActivate.vue'),
+        meta: { title: '激活设备', icon: 'CircleCheck', parent: '设备管理' }
+      },
+      // ========== 管理员设备管理（仅ADMIN）==========
+      {
+        path: 'admin/devices',
+        redirect: '/admin/devices/list',
+        meta: { title: '设备管理', icon: 'Setting', roles: ['ADMIN'] }
+      },
+      {
+        path: 'admin/devices/list',
+        name: 'AdminDeviceManagement',
+        component: () => import('@/views/admin/DeviceManagement.vue'),
+        meta: { title: '所有设备', icon: 'List', roles: ['ADMIN'], parent: '管理员设备' }
+      },
+      {
+        path: 'admin/devices/batch-import',
+        name: 'BatchImportDevices',
+        component: () => import('@/views/admin/BatchImportDevices.vue'),
+        meta: { title: '批量导入', icon: 'Upload', roles: ['ADMIN'], parent: '管理员设备' }
+      },
+      {
+        path: 'admin/devices/activation',
+        name: 'DeviceActivationManagement',
+        component: () => import('@/views/admin/DeviceActivationManagement.vue'),
+        meta: { title: '激活码管理', icon: 'Key', roles: ['ADMIN'], parent: '管理员设备' }
       },
       {
         path: 'devices/create',
         name: 'DeviceCreate',
         component: () => import('@/views/devices/DeviceForm.vue'),
-        meta: { title: '添加设备', hidden: true }
+        meta: { title: '手动录入', hidden: true, roles: ['ADMIN'] }
       },
       {
         path: 'devices/:id/edit',
@@ -45,6 +81,7 @@ const routes = [
         component: () => import('@/views/devices/DeviceForm.vue'),
         meta: { title: '编辑设备', hidden: true }
       },
+      // ========== 数据查询 ==========
       {
         path: 'radiation-data',
         name: 'RadiationData',
@@ -57,6 +94,7 @@ const routes = [
         component: () => import('@/views/data/EnvironmentData.vue'),
         meta: { title: '环境数据', icon: 'Sunny' }
       },
+      // ========== 系统管理（仅ADMIN）==========
       {
         path: 'companies',
         name: 'CompanyList',

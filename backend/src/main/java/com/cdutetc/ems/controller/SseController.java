@@ -28,12 +28,19 @@ public class SseController {
     /**
      * 订阅SSE推送
      *
-     * 前端调用: new EventSource('/api/sse/subscribe')
+     * 前端调用: new EventSource('/api/sse/subscribe?token=xxx')
+     * 注意：EventSource 不支持自定义请求头，所以 token 通过 URL 参数传递
+     * JWT 过滤器会自动从 URL 参数中提取并验证 token
      */
     @GetMapping(value = "/subscribe", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter subscribe() {
-        // 获取当前用户的企业ID
+        // 从 SecurityContext 获取已认证的用户信息（由 JWT 过滤器设置）
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            log.error("SSE订阅失败：未认证");
+            throw new IllegalArgumentException("用户未认证");
+        }
+
         User currentUser = (User) authentication.getPrincipal();
         Long companyId = currentUser.getCompany().getId();
 

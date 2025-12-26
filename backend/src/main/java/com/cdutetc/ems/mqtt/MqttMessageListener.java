@@ -1,9 +1,9 @@
 package com.cdutetc.ems.mqtt;
 
-import com.cdutetc.ems.config.MqttConfig;
 import com.cdutetc.ems.dto.event.DeviceDataEvent;
 import com.cdutetc.ems.dto.mqtt.MqttDeviceDataMessage;
 import com.cdutetc.ems.entity.Device;
+import com.cdutetc.ems.entity.enums.DeviceActivationStatus;
 import com.cdutetc.ems.entity.enums.DeviceStatus;
 import com.cdutetc.ems.entity.enums.DeviceType;
 import com.cdutetc.ems.service.AlertService;
@@ -36,7 +36,6 @@ public class MqttMessageListener implements MqttCallback {
     private final EnvironmentDeviceDataService environmentDeviceDataService;
     private final SseEmitterService sseEmitterService;
     private final AlertService alertService;
-    private final MqttConfig mqttConfig;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -54,8 +53,13 @@ public class MqttMessageListener implements MqttCallback {
             DeviceTopicInfo topicInfo = parseTopic(topic);
             log.debug("📍 解析主题信息: {}", topicInfo);
 
-            // 确保设备存在
-            Device device = getOrCreateDevice(topicInfo.getDeviceCode(), topicInfo.getDeviceType());
+            // 验证设备是否存在且已激活
+            Device device = getAndValidateDevice(topicInfo.getDeviceCode(), topicInfo.getDeviceType());
+
+            // 如果设备验证失败，不处理数据
+            if (device == null) {
+                return;
+            }
 
             // 根据消息类型处理数据
             if ("RADIATION".equalsIgnoreCase(topicInfo.getDeviceType())) {
@@ -109,25 +113,30 @@ public class MqttMessageListener implements MqttCallback {
     }
 
     /**
-     * 获取或创建设备
+     * 获取并验证设备
+     * 只处理已激活且归属企业的设备数据
      */
-    private Device getOrCreateDevice(String deviceCode, String deviceTypeStr) {
+    private Device getAndValidateDevice(String deviceCode, String deviceTypeStr) {
         try {
-            // 查找现有设备
+            // 查找设备
             Device device = deviceService.findByDeviceCode(deviceCode);
 
             if (device == null) {
-                log.info("🔧 设备不存在，自动注册: {}", deviceCode);
+                log.warn("⚠️ 丢弃未录入设备 {} 的数据（设备不存在）", deviceCode);
+                return null;
+            }
 
-                // 根据主题推断设备类型
-                DeviceType deviceType = "RADIATION".equalsIgnoreCase(deviceTypeStr)
-                    ? DeviceType.RADIATION_MONITOR
-                    : DeviceType.ENVIRONMENT_STATION;
+            // 检查设备激活状态
+            if (device.getActivationStatus() != DeviceActivationStatus.ACTIVE) {
+                log.warn("⚠️ 丢弃未激活设备 {} 的数据（当前状态: {}）",
+                    deviceCode, device.getActivationStatus());
+                return null;
+            }
 
-                // 创建新设备
-                device = createAutoRegisteredDevice(deviceCode, deviceType);
-
-                log.info("✅ 设备自动注册成功: {} ({})", deviceCode, deviceType);
+            // 检查设备是否已归属企业
+            if (device.getCompany() == null) {
+                log.error("❌ 丢弃设备 {} 的数据（未归属企业）", deviceCode);
+                return null;
             }
 
             // 更新设备最后在线时间
@@ -137,36 +146,8 @@ public class MqttMessageListener implements MqttCallback {
             return device;
 
         } catch (Exception e) {
-            log.error("❌ 获取或创建设备失败: {}", deviceCode, e);
-            throw new RuntimeException("设备处理失败", e);
-        }
-    }
-
-    /**
-     * 创建自动注册的设备
-     */
-    private Device createAutoRegisteredDevice(String deviceCode, DeviceType deviceType) {
-        try {
-            Device device = new Device();
-            device.setDeviceCode(deviceCode);
-            device.setDeviceName("自动注册设备-" + deviceCode);
-            device.setDeviceType(deviceType);
-            device.setManufacturer("未知");
-            device.setModel("未知");
-            device.setSerialNumber("AUTO-" + deviceCode);
-            device.setDescription("通过MQTT自动注册的设备");
-            device.setLocation("未知");
-            device.setStatus(DeviceStatus.OFFLINE); // 初始状态为离线，收到数据后会更新
-            device.setCreatedAt(LocalDateTime.now());
-            device.setUpdatedAt(LocalDateTime.now());
-            device.setInstallDate(LocalDateTime.now());
-
-            // 分配到默认公司
-            return deviceService.createDevice(device, mqttConfig.getDefaultCompanyId());
-
-        } catch (Exception e) {
-            log.error("❌ 创建自动注册设备失败: {}", deviceCode, e);
-            throw new RuntimeException("设备自动注册失败", e);
+            log.error("❌ 验证设备失败: {}", deviceCode, e);
+            return null;
         }
     }
 

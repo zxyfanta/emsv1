@@ -1,5 +1,6 @@
 package com.cdutetc.ems.entity;
 
+import com.cdutetc.ems.entity.enums.DeviceActivationStatus;
 import com.cdutetc.ems.entity.enums.DeviceStatus;
 import com.cdutetc.ems.entity.enums.DeviceType;
 import jakarta.persistence.*;
@@ -41,9 +42,12 @@ public class Device extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private DeviceType deviceType;
 
-    @NotNull(message = "所属企业不能为空")
+    /**
+     * 所属企业
+     * 设备激活前为null，激活后归属到具体企业
+     */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "company_id", nullable = false)
+    @JoinColumn(name = "company_id", nullable = true)
     private Company company;
 
     @NotNull(message = "设备状态不能为空")
@@ -71,8 +75,20 @@ public class Device extends BaseEntity {
     private String model;
 
     @Size(max = 50, message = "设备序列号长度不能超过50个字符")
-    @Column(name = "serial_number", length = 50)
+    @Column(name = "serial_number", length = 50, unique = true)
     private String serialNumber;
+
+    @Column(name = "production_date")
+    private java.time.LocalDateTime productionDate;
+
+    /**
+     * 设备激活状态
+     * PENDING: 待激活（管理员录入后）
+     * ACTIVE: 已激活（客户注册后）
+     */
+    @Column(name = "activation_status", length = 50)
+    @Enumerated(EnumType.STRING)
+    private DeviceActivationStatus activationStatus = DeviceActivationStatus.PENDING;
 
     @Column(name = "install_date")
     private java.time.LocalDateTime installDate;

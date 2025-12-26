@@ -57,6 +57,14 @@ public class JwtUtil {
     }
 
     /**
+     * 从token中获取用户ID
+     */
+    public Long getUserIdFromToken(String token) {
+        Claims claims = getAllClaimsFromToken(token);
+        return claims.get("userId", Long.class);
+    }
+
+    /**
      * 从token中获取过期时间
      */
     public Date getExpirationDateFromToken(String token) {

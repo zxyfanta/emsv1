@@ -18,6 +18,10 @@ import java.io.IOException;
 
 /**
  * JWT认证过滤器
+ * 支持从多个来源读取 JWT token：
+ * 1. Authorization 头（常规 API 调用）
+ * 2. Cookie（SSE 连接，标准做法）
+ * 3. URL 参数（临时方案，不推荐）
  */
 @Slf4j
 @Component
@@ -29,26 +33,48 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Autowired
     private UserDetailsService userDetailsService;
 
+    @Autowired
+    private JwtCookieUtil jwtCookieUtil;
+
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                   HttpServletResponse response,
                                   FilterChain filterChain) throws ServletException, IOException {
 
-        final String requestTokenHeader = request.getHeader("Authorization");
-
         String username = null;
         String jwtToken = null;
 
-        // JWT Token格式: "Bearer token"
+        // 1. 首先尝试从 Authorization 头获取 token（常规 API）
+        final String requestTokenHeader = request.getHeader("Authorization");
         if (requestTokenHeader != null && requestTokenHeader.startsWith("Bearer ")) {
             jwtToken = requestTokenHeader.substring(7);
             try {
                 username = jwtUtil.getUsernameFromToken(jwtToken);
+                log.debug("Found JWT token in Authorization header");
             } catch (Exception e) {
-                log.warn("Unable to get JWT Token: {}", e.getMessage());
+                log.warn("Unable to get JWT Token from header: {}", e.getMessage());
+            }
+        }
+        // 2. 从 Cookie 获取 token（SSE 标准做法）
+        else if ((jwtToken = jwtCookieUtil.extractJwtFromCookies(request.getCookies())) != null) {
+            try {
+                username = jwtUtil.getUsernameFromToken(jwtToken);
+                log.debug("Found JWT token in Cookie");
+            } catch (Exception e) {
+                log.warn("Unable to get JWT Token from Cookie: {}", e.getMessage());
+            }
+        }
+        // 3. 最后尝试从 URL 参数获取（临时方案，不推荐）
+        else if (request.getParameter("token") != null) {
+            jwtToken = request.getParameter("token");
+            try {
+                username = jwtUtil.getUsernameFromToken(jwtToken);
+                log.warn("Found JWT token in URL parameter (not recommended)");
+            } catch (Exception e) {
+                log.warn("Unable to get JWT Token from URL parameter: {}", e.getMessage());
             }
         } else {
-            log.debug("JWT Token does not begin with Bearer String");
+            log.debug("JWT Token not found in header, cookie or URL parameter");
         }
 
         // 验证token

@@ -2,6 +2,7 @@ package com.cdutetc.ems.config;
 
 import com.cdutetc.ems.entity.*;
 import com.cdutetc.ems.entity.enums.CompanyStatus;
+import com.cdutetc.ems.entity.enums.DeviceActivationStatus;
 import com.cdutetc.ems.entity.enums.DeviceStatus;
 import com.cdutetc.ems.entity.enums.DeviceType;
 import com.cdutetc.ems.entity.enums.UserRole;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 /**
@@ -27,6 +29,8 @@ import java.util.List;
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = "ems.data.initialize", havingValue = "true", matchIfMissing = true)
 public class DataInitializer implements CommandLineRunner {
+
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private final CompanyRepository companyRepository;
     private final UserRepository userRepository;
@@ -52,6 +56,10 @@ public class DataInitializer implements CommandLineRunner {
             // 初始化示例设备
             initializeSampleDevices(defaultCompany);
             log.info("设备初始化完成");
+
+            // 初始化设备监测数据
+            initializeSampleDeviceData();
+            log.info("设备监测数据初始化完成");
 
             log.info("EMS系统基础数据初始化完成！");
 
@@ -135,6 +143,7 @@ public class DataInitializer implements CommandLineRunner {
         radiationDevice.setDeviceCode("RAD001");
         radiationDevice.setDeviceName("辐射监测仪001");
         radiationDevice.setDeviceType(DeviceType.RADIATION_MONITOR);
+        radiationDevice.setActivationStatus(DeviceActivationStatus.ACTIVE);
         radiationDevice.setStatus(DeviceStatus.ONLINE);
         radiationDevice.setLocation("办公区A栋");
         radiationDevice.setDescription("用于办公区辐射监测");
@@ -155,6 +164,7 @@ public class DataInitializer implements CommandLineRunner {
         environmentDevice.setDeviceCode("ENV001");
         environmentDevice.setDeviceName("环境监测站001");
         environmentDevice.setDeviceType(DeviceType.ENVIRONMENT_STATION);
+        environmentDevice.setActivationStatus(DeviceActivationStatus.ACTIVE);
         environmentDevice.setStatus(DeviceStatus.ONLINE);
         environmentDevice.setLocation("厂区B栋");
         environmentDevice.setDescription("用于厂区环境监测");
@@ -175,6 +185,7 @@ public class DataInitializer implements CommandLineRunner {
         radiationDevice2.setDeviceCode("RAD002");
         radiationDevice2.setDeviceName("辐射监测仪002");
         radiationDevice2.setDeviceType(DeviceType.RADIATION_MONITOR);
+        radiationDevice2.setActivationStatus(DeviceActivationStatus.ACTIVE);
         radiationDevice2.setStatus(DeviceStatus.OFFLINE);
         radiationDevice2.setLocation("办公区C栋");
         radiationDevice2.setDescription("用于办公区C栋辐射监测");
@@ -189,26 +200,73 @@ public class DataInitializer implements CommandLineRunner {
 
         Device savedRadiationDevice2 = deviceRepository.save(radiationDevice2);
         log.info("创建辐射监测设备2: {} (ID: {})", savedRadiationDevice2.getDeviceCode(), savedRadiationDevice2.getId());
+
+        // ========== Node-RED 测试设备 ==========
+        // 创建RAD-001（Node-RED模拟的辐射设备，带连字符）
+        Device rad001 = new Device();
+        rad001.setDeviceCode("RAD-001");
+        rad001.setDeviceName("Node-RED辐射监测仪001");
+        rad001.setDeviceType(DeviceType.RADIATION_MONITOR);
+        rad001.setActivationStatus(DeviceActivationStatus.ACTIVE);
+        rad001.setStatus(DeviceStatus.ONLINE);
+        rad001.setLocation("Node-RED模拟区域A");
+        rad001.setDescription("Node-RED设备模拟器测试设备");
+        rad001.setManufacturer("Node-RED Simulator");
+        rad001.setModel("RAD-SIM-v1");
+        rad001.setSerialNumber("RAD-SIM-001");
+        rad001.setInstallDate(LocalDateTime.now().minusDays(1));
+        rad001.setLastOnlineAt(LocalDateTime.now());
+        rad001.setCompany(company);
+        rad001.setPositionX(20);
+        rad001.setPositionY(20);
+
+        Device savedRad001 = deviceRepository.save(rad001);
+        log.info("创建Node-RED测试设备: {} (ID: {})", savedRad001.getDeviceCode(), savedRad001.getId());
+
+        // 创建ENV-001（Node-RED模拟的环境设备，带连字符）
+        Device env001 = new Device();
+        env001.setDeviceCode("ENV-001");
+        env001.setDeviceName("Node-RED环境监测站001");
+        env001.setDeviceType(DeviceType.ENVIRONMENT_STATION);
+        env001.setActivationStatus(DeviceActivationStatus.ACTIVE);
+        env001.setStatus(DeviceStatus.ONLINE);
+        env001.setLocation("Node-RED模拟区域B");
+        env001.setDescription("Node-RED设备模拟器测试设备");
+        env001.setManufacturer("Node-RED Simulator");
+        env001.setModel("ENV-SIM-v1");
+        env001.setSerialNumber("ENV-SIM-001");
+        env001.setInstallDate(LocalDateTime.now().minusDays(1));
+        env001.setLastOnlineAt(LocalDateTime.now());
+        env001.setCompany(company);
+        env001.setPositionX(80);
+        env001.setPositionY(80);
+
+        Device savedEnv001 = deviceRepository.save(env001);
+        log.info("创建Node-RED测试设备: {} (ID: {})", savedEnv001.getDeviceCode(), savedEnv001.getId());
     }
 
     /**
      * 初始化示例设备监测数据
      */
     private void initializeSampleDeviceData() {
-        if (radiationDeviceDataRepository.count() > 0 || environmentDeviceDataRepository.count() > 0) {
-            log.info("设备监测数据已存在，跳过初始化");
-            return;
+        // 分别检查每个表，避免因一个表有数据而跳过其他表的初始化
+        if (radiationDeviceDataRepository.count() == 0) {
+            log.info("初始化辐射设备数据...");
+            List<RadiationDeviceData> radiationDataList = createSampleRadiationData();
+            List<RadiationDeviceData> savedRadiationData = radiationDeviceDataRepository.saveAll(radiationDataList);
+            log.info("创建辐射设备示例数据: {} 条", savedRadiationData.size());
+        } else {
+            log.info("辐射设备数据已存在，跳过初始化");
         }
 
-        // 创建辐射设备示例数据
-        List<RadiationDeviceData> radiationDataList = createSampleRadiationData();
-        List<RadiationDeviceData> savedRadiationData = radiationDeviceDataRepository.saveAll(radiationDataList);
-        log.info("创建辐射设备示例数据: {} 条", savedRadiationData.size());
-
-        // 创建环境设备示例数据
-        List<EnvironmentDeviceData> environmentDataList = createSampleEnvironmentData();
-        List<EnvironmentDeviceData> savedEnvironmentData = environmentDeviceDataRepository.saveAll(environmentDataList);
-        log.info("创建环境设备示例数据: {} 条", savedEnvironmentData.size());
+        if (environmentDeviceDataRepository.count() == 0) {
+            log.info("初始化环境设备数据...");
+            List<EnvironmentDeviceData> environmentDataList = createSampleEnvironmentData();
+            List<EnvironmentDeviceData> savedEnvironmentData = environmentDeviceDataRepository.saveAll(environmentDataList);
+            log.info("创建环境设备示例数据: {} 条", savedEnvironmentData.size());
+        } else {
+            log.info("环境设备数据已存在，跳过初始化");
+        }
     }
 
     /**
@@ -228,21 +286,21 @@ public class DataInitializer implements CommandLineRunner {
             RadiationDeviceData data = new RadiationDeviceData();
             data.setDeviceCode("RAD001");
             data.setRawData(String.format(
-                    "{\"src\":\"RAD001\",\"msgtype\":\"data\",\"CPM\":%d,\"Batvolt\":3.7,\"time\":\"%s\"}",
-                    cpm, recordTime.toString()
+                    "{\"src\":\"RAD001\",\"msgtype\":\"data\",\"CPM\":%.0f,\"Batvolt\":3.7,\"time\":\"%s\"}",
+                    cpm, recordTime.format(TIME_FORMATTER)
             ));
             data.setSrc(1); // 假设1表示设备源
             data.setMsgtype(1); // 假设1表示data类型
             data.setCpm(cpm);
             data.setBatvolt(3.7 + Math.random() * 0.3); // 3.7-4.0之间的随机电压
-            data.setTime(recordTime.toString());
+            data.setTime(recordTime.format(TIME_FORMATTER));
             data.setRecordTime(recordTime);
             data.setDataTrigger(1);
             data.setMulti(1);
             data.setWay(1);
             data.setBdsLongitude(String.valueOf(116.4074 + Math.random() * 0.01)); // 北京经纬度附近
             data.setBdsLatitude(String.valueOf(39.9042 + Math.random() * 0.01));
-            data.setBdsUtc(recordTime.toString());
+            data.setBdsUtc(recordTime.format(TIME_FORMATTER));
             data.setLbsLongitude(String.valueOf(116.4074 + Math.random() * 0.01));
             data.setLbsLatitude(String.valueOf(39.9042 + Math.random() * 0.01));
             data.setLbsUseful(0); // 假设0表示LBS不可用
@@ -258,14 +316,14 @@ public class DataInitializer implements CommandLineRunner {
             RadiationDeviceData data = new RadiationDeviceData();
             data.setDeviceCode("RAD002");
             data.setRawData(String.format(
-                    "{\"src\":\"RAD002\",\"msgtype\":\"data\",\"CPM\":%d,\"Batvolt\":3.6,\"time\":\"%s\"}",
-                    cpm, recordTime.toString()
+                    "{\"src\":\"RAD002\",\"msgtype\":\"data\",\"CPM\":%.0f,\"Batvolt\":3.6,\"time\":\"%s\"}",
+                    cpm, recordTime.format(TIME_FORMATTER)
             ));
             data.setSrc(2); // 假设2表示设备源
             data.setMsgtype(1); // 假设1表示data类型
             data.setCpm(cpm);
             data.setBatvolt(3.6);
-            data.setTime(recordTime.toString());
+            data.setTime(recordTime.format(TIME_FORMATTER));
             data.setRecordTime(recordTime);
             data.setDataTrigger(1);
             data.setMulti(1);
@@ -299,7 +357,7 @@ public class DataInitializer implements CommandLineRunner {
             EnvironmentDeviceData data = new EnvironmentDeviceData();
             data.setDeviceCode("ENV001");
             data.setRawData(String.format(
-                    "{\"src\":\"ENV001\",\"CPM\":%d,\"temperature\":%.1f,\"wetness\":%.1f,\"windspeed\":%.1f,\"total\":%.1f,\"battery\":%.1f}",
+                    "{\"src\":\"ENV001\",\"CPM\":%.0f,\"temperature\":%.1f,\"wetness\":%.1f,\"windspeed\":%.1f,\"total\":%.1f,\"battery\":%.1f}",
                     cpm, temperature, humidity, windSpeed, total, battery
             ));
             data.setSrc(3); // 假设3表示环境设备源
