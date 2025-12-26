@@ -1,6 +1,7 @@
 package com.cdutetc.ems.config;
 
 import com.cdutetc.ems.entity.*;
+import com.cdutetc.ems.entity.enums.ActivationCodeStatus;
 import com.cdutetc.ems.entity.enums.CompanyStatus;
 import com.cdutetc.ems.entity.enums.DeviceActivationStatus;
 import com.cdutetc.ems.entity.enums.DeviceStatus;
@@ -19,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * 数据初始化器
@@ -37,6 +39,7 @@ public class DataInitializer implements CommandLineRunner {
     private final DeviceRepository deviceRepository;
     private final RadiationDeviceDataRepository radiationDeviceDataRepository;
     private final EnvironmentDeviceDataRepository environmentDeviceDataRepository;
+    private final DeviceActivationCodeRepository activationCodeRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -263,6 +266,7 @@ public class DataInitializer implements CommandLineRunner {
 
         Device savedPendingRad1 = deviceRepository.save(pendingRad1);
         log.info("创建待激活辐射设备: {} (ID: {})", savedPendingRad1.getDeviceCode(), savedPendingRad1.getId());
+        createActivationCode(savedPendingRad1);
 
         // 创建待激活的环境设备
         Device pendingEnv1 = new Device();
@@ -282,6 +286,7 @@ public class DataInitializer implements CommandLineRunner {
 
         Device savedPendingEnv1 = deviceRepository.save(pendingEnv1);
         log.info("创建待激活环境设备: {} (ID: {})", savedPendingEnv1.getDeviceCode(), savedPendingEnv1.getId());
+        createActivationCode(savedPendingEnv1);
 
         // 创建更多待激活设备（批量测试）
         for (int i = 2; i <= 5; i++) {
@@ -302,6 +307,7 @@ public class DataInitializer implements CommandLineRunner {
 
             Device savedPendingDevice = deviceRepository.save(pendingDevice);
             log.info("创建待激活设备: {} (ID: {})", savedPendingDevice.getDeviceCode(), savedPendingDevice.getId());
+            createActivationCode(savedPendingDevice);
         }
     }
 
@@ -433,5 +439,26 @@ public class DataInitializer implements CommandLineRunner {
         }
 
         return dataList;
+    }
+
+    /**
+     * 生成唯一的激活码
+     */
+    private String generateActivationCode() {
+        return UUID.randomUUID().toString().replace("-", "").substring(0, 16).toUpperCase();
+    }
+
+    /**
+     * 为设备创建激活码
+     */
+    private void createActivationCode(Device device) {
+        DeviceActivationCode activationCode = new DeviceActivationCode();
+        activationCode.setDevice(device);
+        activationCode.setCode(generateActivationCode());
+        activationCode.setGeneratedAt(LocalDateTime.now());
+        activationCode.setExpiresAt(LocalDateTime.now().plusDays(30)); // 30天有效期
+        activationCode.setStatus(ActivationCodeStatus.UNUSED);
+        activationCodeRepository.save(activationCode);
+        log.info("创建激活码: {} 用于设备 {}", activationCode.getCode(), device.getDeviceCode());
     }
 }
