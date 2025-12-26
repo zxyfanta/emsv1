@@ -209,9 +209,9 @@ const copyCode = async (code) => {
   }
 }
 
-// 查看设备详情
+// 查看设备详情（跳转到管理员设备列表页面）
 const viewDevice = (id) => {
-  router.push(`/devices/${id}`)
+  router.push('/admin/devices/list')
 }
 
 // 获取设备类型名称

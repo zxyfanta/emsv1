@@ -58,6 +58,10 @@ export const useUserStore = defineStore('user', {
         this.userInfo = null
         localStorage.removeItem('token')
         localStorage.removeItem('userInfo')
+
+        // 重置路由（清除动态加载的路由）
+        const { resetRouter } = await import('@/router/index')
+        resetRouter()
       }
     }
   }

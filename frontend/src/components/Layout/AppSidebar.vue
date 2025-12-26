@@ -5,7 +5,6 @@
     </div>
     <el-menu
       :default-active="activeMenu"
-      :default-openeds="defaultOpenedMenus"
       :collapse="appStore.sidebarCollapsed"
       :unique-opened="false"
       router
@@ -13,42 +12,47 @@
       text-color="#bfcbd9"
       active-text-color="#409eff"
     >
-      <!-- 可视化大屏 -->
-      <template v-for="route in menuRoutes" :key="route.path">
-        <!-- 有子菜单的路由 -->
-        <el-sub-menu v-if="hasChildren(route) && !route.meta?.hidden && hasPermission(route)" :index="route.path">
-          <template #title>
-            <el-icon v-if="route.meta?.icon">
-              <component :is="getIcon(route.meta.icon)" />
-            </el-icon>
-            <span>{{ route.meta?.title }}</span>
-          </template>
-          <!-- 子菜单项 -->
-          <template v-for="child in getChildren(route.path)" :key="child.path">
+      <!-- 遍历所有菜单分组 -->
+      <template v-for="category in menuCategories" :key="category.key">
+        <!-- 数据概览特殊处理（顶级独立项，不使用子菜单） -->
+        <template v-if="category.key === '数据概览'">
+          <template v-for="route in getCategoryRoutes(category.key)" :key="route.path">
             <el-menu-item
-              v-if="!child.meta?.hidden && hasPermission(child)"
-              :index="child.path"
-              :route="child.path"
+              v-if="!route.meta?.hidden"
+              :index="route.path"
+              :route="route.path"
             >
-              <el-icon v-if="child.meta?.icon">
-                <component :is="getIcon(child.meta.icon)" />
+              <el-icon v-if="route.meta?.icon">
+                <component :is="getIcon(route.meta.icon)" />
               </el-icon>
-              <template #title>{{ child.meta?.title }}</template>
+              <template #title>{{ route.meta?.title }}</template>
+            </el-menu-item>
+          </template>
+        </template>
+
+        <!-- 其他分组显示为子菜单 -->
+        <el-sub-menu v-else :index="category.key">
+          <template #title>
+            <el-icon v-if="category.icon">
+              <component :is="getIcon(category.icon)" />
+            </el-icon>
+            <span>{{ category.key }}</span>
+          </template>
+
+          <!-- 该分组下的所有路由 -->
+          <template v-for="route in getCategoryRoutes(category.key)" :key="route.path">
+            <el-menu-item
+              v-if="!route.meta?.hidden"
+              :index="route.path"
+              :route="route.path"
+            >
+              <el-icon v-if="route.meta?.icon">
+                <component :is="getIcon(route.meta.icon)" />
+              </el-icon>
+              <template #title>{{ route.meta?.title }}</template>
             </el-menu-item>
           </template>
         </el-sub-menu>
-
-        <!-- 无子菜单的路由 -->
-        <el-menu-item
-          v-else-if="!route.meta?.hidden && hasPermission(route)"
-          :index="route.path"
-          :route="route.path"
-        >
-          <el-icon v-if="route.meta?.icon">
-            <component :is="getIcon(route.meta.icon)" />
-          </el-icon>
-          <template #title>{{ route.meta?.title }}</template>
-        </el-menu-item>
       </template>
     </el-menu>
   </div>
@@ -58,147 +62,56 @@
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAppStore } from '@/store/app'
-import { useUserStore } from '@/store/user'
+import { menuCategories } from '@/router/routes'
 import * as ElementPlusIcons from '@element-plus/icons-vue'
 
 const route = useRoute()
 const router = useRouter()
 const appStore = useAppStore()
-const userStore = useUserStore()
 
-// 当前激活的菜单
-const activeMenu = computed(() => {
-  const { path } = route
+// ========================================
+// 当前激活的菜单（直接使用路径，无需复杂映射）
+// ========================================
+const activeMenu = computed(() => route.path)
 
-  // 可视化大屏单独处理
-  if (path === '/visualization') {
-    return '/visualization'
-  }
+// ========================================
+// 获取所有已加载的路由
+// ========================================
+const loadedRoutes = computed(() => {
+  const allRoutes = router.getRoutes()
 
-  // 设备管理相关路由统一映射到主菜单
-  if (path.startsWith('/devices/') && path !== '/devices/list') {
-    return '/devices'
-  }
+  // 过滤出需要在菜单中显示的路由
+  return allRoutes.filter(route => {
+    // 不显示隐藏的路由
+    if (route.meta?.hidden) return false
 
-  // 管理员设备管理路由 - 返回当前路径因为使用子菜单
-  if (path.startsWith('/admin/devices/')) {
-    return path
-  }
+    // 不显示没有标题的路由
+    if (!route.meta?.title) return false
 
-  return path
+    // 不显示根路径和布局组件
+    if (route.path === '/' || route.path === '') return false
+
+    // 不显示Login、403、404等错误页面
+    if (route.name === 'Login' || route.name === 'Forbidden' || route.name === 'NotFound') {
+      return false
+    }
+
+    return true
+  })
 })
 
-// 默认展开的子菜单
-const defaultOpenedMenus = computed(() => {
-  const { path } = route
-  const opened = []
-
-  // 如果当前在管理员设备管理页面，展开该菜单
-  if (path.startsWith('/admin/devices/')) {
-    opened.push('/admin/devices')
-  }
-
-  // 如果当前在设备管理页面（非列表页），展开该菜单
-  if (path.startsWith('/devices/') && path !== '/devices/list') {
-    opened.push('/devices')
-  }
-
-  return opened
-})
-
-// 构建菜单路由（扁平化）
-const menuRoutes = computed(() => {
-  const mainRoute = router.getRoutes().find(r => r.path === '/')
-  const children = mainRoute?.children || []
-
-  // 在菜单顶部添加可视化大屏（指向独立路由）
-  const visualizationRoute = router.getRoutes().find(r => r.path === '/visualization')
-
-  // 过滤出可作为父菜单的路由（有parent属性或被重定向的路由）
-  const parentRoutes = children.filter(child =>
-    child.meta?.parent ||
-    (child.redirect && !child.meta?.hidden)
-  )
-
-  // 添加独立路由和普通路由（没有parent且没有redirect的）
-  const normalRoutes = children.filter(child =>
-    !child.meta?.parent &&
-    !child.redirect &&
-    !child.meta?.hidden
-  )
-
-  if (visualizationRoute) {
-    return [visualizationRoute, ...parentRoutes, ...normalRoutes]
-  }
-
-  return [...parentRoutes, ...normalRoutes]
-})
-
-/**
- * 检查路由是否有子菜单
- */
-const hasChildren = (route) => {
-  if (!route.redirect) return false
-
-  const mainRoute = router.getRoutes().find(r => r.path === '/')
-  const children = mainRoute?.children || []
-
-  // 查找以该路由路径为前缀的子路由
-  return children.some(child =>
-    child.path.startsWith(route.path + '/') &&
-    child.meta?.parent === route.meta?.title
-  )
+// ========================================
+// 根据分组获取路由
+// ========================================
+const getCategoryRoutes = (category) => {
+  return loadedRoutes.value
+    .filter(route => route.meta?.category === category)
+    .sort((a, b) => (a.meta?.order || 0) - (b.meta?.order || 0))
 }
 
-/**
- * 获取子路由
- */
-const getChildren = (parentPath) => {
-  const mainRoute = router.getRoutes().find(r => r.path === '/')
-  const children = mainRoute?.children || []
-
-  const parentTitle = menuRoutes.value.find(r => r.path === parentPath)?.meta?.title
-
-  return children.filter(child =>
-    child.path.startsWith(parentPath + '/') &&
-    child.meta?.parent === parentTitle
-  )
-}
-
-/**
- * 检查路由是否可显示
- * 1. 首先检查角色权限
- * 2. 然后检查系统功能开关配置
- */
-const hasPermission = (route) => {
-  const { systemConfig } = appStore
-
-  // 1. 检查角色权限
-  const roles = route.meta?.roles
-  if (roles && !roles.includes(userStore.userRole)) {
-    return false
-  }
-
-  // 2. 检查系统功能开关
-  const path = route.path.slice(1) // 去掉开头的 /
-  const moduleCode = path.split('/')[0]
-
-  if (moduleCode === 'devices') {
-    // 设备管理：辐射或环境任一启用即显示
-    return systemConfig.radiationEnabled || systemConfig.environmentEnabled
-  }
-
-  if (moduleCode === 'radiation-data') {
-    return systemConfig.radiationEnabled
-  }
-
-  if (moduleCode === 'environment-data') {
-    return systemConfig.environmentEnabled
-  }
-
-  return true
-}
-
+// ========================================
+// 获取图标组件
+// ========================================
 const getIcon = (iconName) => {
   return ElementPlusIcons[iconName] || ElementPlusIcons.Document
 }
