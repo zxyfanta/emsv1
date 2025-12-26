@@ -41,14 +41,14 @@ const toggleSidebar = () => {
   appStore.toggleSidebar()
 }
 
-const handleCommand = (command) => {
+const handleCommand = async (command) => {
   if (command === 'logout') {
     ElMessageBox.confirm('确定要退出登录吗？', '提示', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'warning'
-    }).then(() => {
-      userStore.logout()
+    }).then(async () => {
+      await userStore.logout()
       router.push('/login')
     })
   } else if (command === 'profile') {

@@ -187,4 +187,12 @@ public interface DeviceRepository extends JpaRepository<Device, Long> {
             @Param("companyId") Long companyId,
             @Param("activationStatus") DeviceActivationStatus activationStatus,
             Pageable pageable);
+
+    /**
+     * 统计企业中指定激活状态的设备数量
+     */
+    @Query("SELECT COUNT(d) FROM Device d WHERE d.company.id = :companyId AND d.activationStatus = :activationStatus")
+    long countByCompanyIdAndActivationStatus(
+            @Param("companyId") Long companyId,
+            @Param("activationStatus") DeviceActivationStatus activationStatus);
 }

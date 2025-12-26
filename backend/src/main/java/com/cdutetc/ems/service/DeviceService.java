@@ -6,6 +6,7 @@ import com.cdutetc.ems.entity.enums.DeviceActivationStatus;
 import com.cdutetc.ems.entity.enums.DeviceStatus;
 import com.cdutetc.ems.entity.enums.DeviceType;
 import com.cdutetc.ems.repository.CompanyRepository;
+import com.cdutetc.ems.repository.DeviceActivationCodeRepository;
 import com.cdutetc.ems.repository.DeviceRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +28,7 @@ public class DeviceService {
 
     private final DeviceRepository deviceRepository;
     private final CompanyRepository companyRepository;
+    private final DeviceActivationCodeRepository activationCodeRepository;
 
     /**
      * 创建设备
@@ -211,6 +213,11 @@ public class DeviceService {
         long radiationDevices = deviceRepository.countByCompanyIdAndDeviceType(companyId, DeviceType.RADIATION_MONITOR);
         long environmentDevices = deviceRepository.countByCompanyIdAndDeviceType(companyId, DeviceType.ENVIRONMENT_STATION);
 
+        // 管理员统计：待激活、已激活、激活码数量
+        long pendingCount = deviceRepository.countByCompanyIdAndActivationStatus(companyId, DeviceActivationStatus.PENDING);
+        long activatedCount = deviceRepository.countByCompanyIdAndActivationStatus(companyId, DeviceActivationStatus.ACTIVE);
+        long activationCodeCount = activationCodeRepository.countByStatus(com.cdutetc.ems.entity.enums.ActivationCodeStatus.UNUSED);
+
         return DeviceStatistics.builder()
                 .totalDevices(totalDevices)
                 .onlineDevices(onlineDevices)
@@ -219,6 +226,9 @@ public class DeviceService {
                 .maintenanceDevices(maintenanceDevices)
                 .radiationDevices(radiationDevices)
                 .environmentDevices(environmentDevices)
+                .pendingCount(pendingCount)
+                .activatedCount(activatedCount)
+                .activationCodeCount(activationCodeCount)
                 .build();
     }
 
@@ -237,5 +247,9 @@ public class DeviceService {
         private long maintenanceDevices;
         private long radiationDevices;
         private long environmentDevices;
+        // 管理员统计字段
+        private long pendingCount;
+        private long activatedCount;
+        private long activationCodeCount;
     }
 }

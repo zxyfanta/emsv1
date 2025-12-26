@@ -245,7 +245,7 @@ const handleActivate = async () => {
     if (res.status === 200) {
       ElMessage.success('设备激活成功！')
       setTimeout(() => {
-        router.push('/devices')
+        router.push('/devices/list')
       }, 1500)
     } else {
       ElMessage.error(res.message || '设备激活失败')
@@ -289,12 +289,31 @@ const formatDate = (dateStr) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .card-header h2 {
   margin: 0;
   font-size: 20px;
   font-weight: 600;
+}
+
+/* 确保步骤条在同一行 */
+:deep(.el-steps) {
+  display: flex;
+  width: 100%;
+  flex: 1;
+}
+
+:deep(.el-step) {
+  flex: 1;
+  min-width: 120px;
+}
+
+/* 确保步骤标题不换行 */
+:deep(.el-step__title) {
+  white-space: nowrap;
 }
 
 .step-content {
@@ -319,5 +338,21 @@ const formatDate = (dateStr) => {
 .step-actions .el-button {
   margin: 0 10px;
   min-width: 120px;
+}
+
+/* 确保表单标签不换行 */
+:deep(.el-form-item__label) {
+  white-space: nowrap;
+}
+
+/* 确保表单项标签和输入框在同一行 */
+:deep(.el-form-item) {
+  display: flex;
+  align-items: center;
+}
+
+:deep(.el-form-item__content) {
+  flex: 1;
+  min-width: 0;
 }
 </style>

@@ -290,7 +290,7 @@ const handleImport = async () => {
     }))
     const res = await batchImportDevices(processedList)
 
-    if (res.code === 200) {
+    if (res.status === 200) {
       importResult.value = res.data
       ElMessage.success(`导入完成！成功 ${res.data.importedCount} 台`)
     } else {
