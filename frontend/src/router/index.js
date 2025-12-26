@@ -62,8 +62,6 @@ export async function setupRouter(userStore) {
 
     // 标记路由已加载
     routerLoaded = true
-
-    console.log('✅ 动态路由加载成功')
   } catch (error) {
     console.error('❌ 动态路由加载失败:', error)
     throw error

@@ -123,6 +123,19 @@ export const userRoutes = [
       category: '数据查询',
       order: 21
     }
+  },
+
+  // 企业信息(普通用户)
+  {
+    path: '/company/info',
+    name: 'CompanyInfo',
+    component: () => import('@/views/companies/CompanyInfo.vue'),
+    meta: {
+      title: '企业信息',
+      icon: 'OfficeBuilding',
+      category: '系统设置',
+      order: 30
+    }
   }
 ]
 
@@ -274,5 +287,10 @@ export const menuCategories = [
     key: '系统管理',
     icon: 'Setting',
     order: 30
+  },
+  {
+    key: '系统设置',
+    icon: 'Setting',
+    order: 31
   }
 ]

@@ -21,6 +21,11 @@ public interface UserService {
     User findById(Long id);
 
     /**
+     * 根据ID查找用户并加载企业信息
+     */
+    User findByIdWithCompany(Long id);
+
+    /**
      * 根据用户名查找用户
      */
     User findByUsername(String username);

@@ -1,17 +1,16 @@
 package com.cdutetc.ems.dto.request;
 
 import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 /**
- * 创建企业请求DTO
+ * 更新企业信息请求DTO (普通用户专用)
+ * 只包含允许普通用户修改的字段
  */
 @Data
-public class CompanyCreateRequest {
+public class CompanyUpdateRequest {
 
-    @NotBlank(message = "企业名称不能为空")
     @Size(max = 100, message = "企业名称长度不能超过100个字符")
     private String companyName;
 

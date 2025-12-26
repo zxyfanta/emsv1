@@ -26,12 +26,7 @@ public class CompanyServiceImpl implements CompanyService {
 
     @Override
     public Company createCompany(Company company) {
-        log.debug("Creating company: {}", company.getCompanyCode());
-
-        // 检查企业编码是否已存在
-        if (companyRepository.existsByCompanyCode(company.getCompanyCode())) {
-            throw new IllegalArgumentException("企业编码已存在: " + company.getCompanyCode());
-        }
+        log.debug("Creating company: {}", company.getCompanyName());
 
         // 设置默认状态
         if (company.getStatus() == null) {
@@ -39,7 +34,7 @@ public class CompanyServiceImpl implements CompanyService {
         }
 
         Company savedCompany = companyRepository.save(company);
-        log.debug("Company created successfully: {}", savedCompany.getCompanyCode());
+        log.debug("Company created successfully: {}", savedCompany.getCompanyName());
         return savedCompany;
     }
 
@@ -51,22 +46,12 @@ public class CompanyServiceImpl implements CompanyService {
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public Company findByCompanyCode(String companyCode) {
-        return companyRepository.findByCompanyCode(companyCode)
-                .orElseThrow(() -> new IllegalArgumentException("企业不存在: " + companyCode));
-    }
-
-    @Override
     public Company updateCompany(Long id, Company company) {
         log.debug("Updating company with ID: {}", id);
 
         Company existingCompany = findById(id);
 
         // 更新企业信息
-        if (company.getCompanyCode() != null) {
-            existingCompany.setCompanyCode(company.getCompanyCode());
-        }
         if (company.getCompanyName() != null) {
             existingCompany.setCompanyName(company.getCompanyName());
         }
@@ -79,12 +64,15 @@ public class CompanyServiceImpl implements CompanyService {
         if (company.getAddress() != null) {
             existingCompany.setAddress(company.getAddress());
         }
+        if (company.getDescription() != null) {
+            existingCompany.setDescription(company.getDescription());
+        }
         if (company.getStatus() != null) {
             existingCompany.setStatus(company.getStatus());
         }
 
         Company updatedCompany = companyRepository.save(existingCompany);
-        log.debug("Company updated successfully: {}", updatedCompany.getCompanyCode());
+        log.debug("Company updated successfully: {}", updatedCompany.getCompanyName());
         return updatedCompany;
     }
 
@@ -95,7 +83,7 @@ public class CompanyServiceImpl implements CompanyService {
         Company existingCompany = findById(id);
         companyRepository.delete(existingCompany);
 
-        log.debug("Company deleted successfully: {}", existingCompany.getCompanyCode());
+        log.debug("Company deleted successfully: {}", existingCompany.getCompanyName());
     }
 
     @Override
@@ -111,12 +99,6 @@ public class CompanyServiceImpl implements CompanyService {
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public boolean existsByCompanyCode(String companyCode) {
-        return companyRepository.existsByCompanyCode(companyCode);
-    }
-
-    @Override
     public void updateCompanyStatus(Long id, CompanyStatus status) {
         log.debug("Updating status for company ID: {} to {}", id, status);
 
@@ -124,7 +106,7 @@ public class CompanyServiceImpl implements CompanyService {
         company.setStatus(status);
         companyRepository.save(company);
 
-        log.debug("Status updated successfully for company: {}", company.getCompanyCode());
+        log.debug("Status updated successfully for company: {}", company.getCompanyName());
     }
 
     @Override

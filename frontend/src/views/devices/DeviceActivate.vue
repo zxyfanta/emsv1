@@ -256,16 +256,6 @@ const handleActivate = async () => {
     if (res.status === 200) {
       ElMessage.success('设备激活成功！')
 
-      // 触发自定义事件，通知其他页面刷新设备数据
-      window.dispatchEvent(new CustomEvent('device-updated', {
-        detail: {
-          deviceId: res.data.id,
-          deviceCode: res.data.deviceCode,
-          type: 'activated'
-        }
-      }))
-      console.log('[设备激活] 已触发设备更新事件')
-
       setTimeout(() => {
         router.push('/devices/list')
       }, 1500)

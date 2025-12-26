@@ -102,7 +102,7 @@ public class UserController {
             @Parameter(description = "用户ID") @PathVariable Long id,
             HttpServletRequest request) {
         try {
-            User user = userService.findById(id);
+            User user = userService.findByIdWithCompany(id);
 
             // 验证权限：管理员可以查看所有用户，普通用户只能查看自己
             String token = extractTokenFromRequest(request);
@@ -146,7 +146,7 @@ public class UserController {
             }
 
             Long userId = jwtUtil.getUserIdFromToken(token);
-            User user = userService.findById(userId);
+            User user = userService.findByIdWithCompany(userId);
 
             UserResponse response = UserResponse.fromUser(user);
             return ResponseEntity.ok(ApiResponse.success(response));

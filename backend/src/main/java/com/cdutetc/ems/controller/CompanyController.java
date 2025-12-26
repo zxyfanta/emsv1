@@ -1,6 +1,7 @@
 package com.cdutetc.ems.controller;
 
 import com.cdutetc.ems.dto.request.CompanyCreateRequest;
+import com.cdutetc.ems.dto.request.CompanyUpdateRequest;
 import com.cdutetc.ems.dto.response.CompanyResponse;
 import com.cdutetc.ems.entity.Company;
 import com.cdutetc.ems.entity.enums.CompanyStatus;
@@ -83,24 +84,18 @@ public class CompanyController {
     public ResponseEntity<ApiResponse<CompanyResponse>> createCompany(
             @Valid @RequestBody CompanyCreateRequest request) {
         try {
-            // 检查企业编码是否已存在
-            if (companyService.existsByCompanyCode(request.getCompanyCode())) {
-                return ResponseEntity.badRequest()
-                        .body(ApiResponse.badRequest("企业编码已存在"));
-            }
-
             Company company = new Company();
-            company.setCompanyCode(request.getCompanyCode());
             company.setCompanyName(request.getCompanyName());
             company.setContactEmail(request.getContactEmail());
             company.setContactPhone(request.getContactPhone());
             company.setAddress(request.getAddress());
+            company.setDescription(request.getDescription());
             company.setStatus(CompanyStatus.ACTIVE);
 
             Company createdCompany = companyService.createCompany(company);
             CompanyResponse response = CompanyResponse.fromCompany(createdCompany);
 
-            log.info("Company created successfully: {}", createdCompany.getCompanyCode());
+            log.info("Company created successfully: {}", createdCompany.getCompanyName());
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(ApiResponse.created(response));
 
@@ -175,6 +170,48 @@ public class CompanyController {
     }
 
     /**
+     * 更新当前用户的企业信息
+     */
+    @PutMapping("/current")
+    @Operation(summary = "更新当前企业信息", description = "更新当前用户所属企业的部分信息")
+    public ResponseEntity<ApiResponse<CompanyResponse>> updateCurrentCompany(
+            @Valid @RequestBody CompanyUpdateRequest request,
+            HttpServletRequest httpRequest) {
+        try {
+            Long companyId = getCurrentCompanyId(httpRequest);
+            Company existingCompany = companyService.findById(companyId);
+
+            // 只允许更新部分字段(不包含状态等管理字段)
+            if (request.getCompanyName() != null) {
+                existingCompany.setCompanyName(request.getCompanyName());
+            }
+            if (request.getContactEmail() != null) {
+                existingCompany.setContactEmail(request.getContactEmail());
+            }
+            if (request.getContactPhone() != null) {
+                existingCompany.setContactPhone(request.getContactPhone());
+            }
+            if (request.getAddress() != null) {
+                existingCompany.setAddress(request.getAddress());
+            }
+            if (request.getDescription() != null) {
+                existingCompany.setDescription(request.getDescription());
+            }
+
+            Company updatedCompany = companyService.updateCompany(companyId, existingCompany);
+            CompanyResponse response = CompanyResponse.fromCompany(updatedCompany);
+
+            log.info("Current company updated successfully: {}", updatedCompany.getCompanyName());
+            return ResponseEntity.ok(ApiResponse.updated(response));
+
+        } catch (Exception e) {
+            log.error("Error updating current company: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("更新企业信息失败"));
+        }
+    }
+
+    /**
      * 更新企业信息
      */
     @PutMapping("/{id}")
@@ -186,24 +223,17 @@ public class CompanyController {
         try {
             Company existingCompany = companyService.findById(id);
 
-            // 检查企业编码是否被其他企业使用
-            if (!existingCompany.getCompanyCode().equals(request.getCompanyCode()) &&
-                companyService.existsByCompanyCode(request.getCompanyCode())) {
-                return ResponseEntity.badRequest()
-                        .body(ApiResponse.badRequest("企业编码已被其他企业使用"));
-            }
-
             // 更新企业信息
-            existingCompany.setCompanyCode(request.getCompanyCode());
             existingCompany.setCompanyName(request.getCompanyName());
             existingCompany.setContactEmail(request.getContactEmail());
             existingCompany.setContactPhone(request.getContactPhone());
             existingCompany.setAddress(request.getAddress());
+            existingCompany.setDescription(request.getDescription());
 
             Company updatedCompany = companyService.updateCompany(id, existingCompany);
             CompanyResponse response = CompanyResponse.fromCompany(updatedCompany);
 
-            log.info("Company updated successfully: {}", updatedCompany.getCompanyCode());
+            log.info("Company updated successfully: {}", updatedCompany.getCompanyName());
             return ResponseEntity.ok(ApiResponse.updated(response));
 
         } catch (RuntimeException e) {

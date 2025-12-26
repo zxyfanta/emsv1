@@ -406,15 +406,6 @@ const handleCompanyChange = (companyId) => {
   loadDevices()
 }
 
-// 处理设备更新事件
-const handleDeviceUpdate = (event) => {
-  console.log('[可视化大屏] 收到设备更新事件:', event.detail)
-  console.log('[可视化大屏] 当前设备数量:', devices.value.length)
-  loadDevices().then(() => {
-    console.log('[可视化大屏] 刷新完成，新设备数量:', devices.value.length)
-  })
-}
-
 // 监听企业切换
 watch(selectedCompanyId, () => {
   if (selectedCompanyId.value) {
@@ -423,15 +414,15 @@ watch(selectedCompanyId, () => {
 })
 
 onMounted(async () => {
+  console.log('[可视化大屏] onMounted - 开始初始化')
+
   // 先加载企业列表（如果是管理员）
   await loadCompanies()
 
-  // 立即加载设备数据，不依赖 canvasContainer 的就绪状态
-  loadDevices()
-
-  // 监听设备更新事件
-  window.addEventListener('device-updated', handleDeviceUpdate)
-  console.log('[可视化大屏] 已注册设备更新事件监听')
+  // 立即加载设备数据，确保每次挂载时都获取最新数据
+  // 这样从设备编辑页面返回时，会自动显示更新后的位置
+  await loadDevices()
+  console.log('[可视化大屏] 设备数据已加载，设备数量:', devices.value.length)
 
   // 等待 DOM 完全渲染（dv-full-screen-container 需要更多时间初始化）
   await nextTick()
@@ -461,10 +452,6 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(() => {
-  // 清理事件监听
-  window.removeEventListener('device-updated', handleDeviceUpdate)
-  console.log('[可视化大屏] 已清理设备更新事件监听')
-
   if (resizeObserver) {
     resizeObserver.disconnect()
   }

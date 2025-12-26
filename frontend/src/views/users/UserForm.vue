@@ -49,8 +49,8 @@
 
         <el-form-item label="角色" prop="role">
           <el-radio-group v-model="formData.role">
-            <el-radio label="USER">普通用户</el-radio>
-            <el-radio label="ADMIN">管理员</el-radio>
+            <el-radio value="USER">普通用户</el-radio>
+            <el-radio value="ADMIN">管理员</el-radio>
           </el-radio-group>
         </el-form-item>
 
@@ -72,8 +72,8 @@
 
         <el-form-item label="状态" prop="status">
           <el-radio-group v-model="formData.status">
-            <el-radio label="ACTIVE">活跃</el-radio>
-            <el-radio label="INACTIVE">非活跃</el-radio>
+            <el-radio value="ACTIVE">活跃</el-radio>
+            <el-radio value="INACTIVE">非活跃</el-radio>
           </el-radio-group>
         </el-form-item>
 

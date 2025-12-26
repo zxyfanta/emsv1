@@ -28,13 +28,12 @@ public class TestDataBuilder {
     public static Company buildTestCompany() {
         Company company = new Company();
         // 不设置ID，让数据库自动生成
-        company.setCompanyCode("TEST-COMPANY-" + companyCounter.incrementAndGet());
-        company.setCompanyName("测试企业");
+        company.setCompanyName("测试企业-" + companyCounter.incrementAndGet());
         company.setContactEmail("test@example.com");
         company.setContactPhone("13800138000");
         company.setAddress("测试地址");
         company.setDescription("测试企业描述");
-        company.setStatus(com.cdutetc.ems.entity.enums.CompanyStatus.ACTIVE);
+        company.setStatus(CompanyStatus.ACTIVE);
         company.setCreatedAt(LocalDateTime.now());
         company.setUpdatedAt(LocalDateTime.now());
         return company;

@@ -25,6 +25,18 @@ export const getCurrentCompany = () => {
   })
 }
 
+// 获取当前企业信息(别名,用于组件导入)
+export const getCurrentCompanyInfo = getCurrentCompany
+
+// 更新当前企业信息
+export const updateCurrentCompany = (data) => {
+  return request({
+    url: '/companies/current',
+    method: 'put',
+    data
+  })
+}
+
 // 创建企业
 export const createCompany = (data) => {
   return request({

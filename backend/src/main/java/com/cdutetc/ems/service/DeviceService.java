@@ -87,8 +87,20 @@ public class DeviceService {
             existingDevice.setLocation(device.getLocation());
         }
 
+        // 更新可视化坐标
+        if (device.getPositionX() != null) {
+            existingDevice.setPositionX(device.getPositionX());
+            log.debug("Updated positionX to: {}", device.getPositionX());
+        }
+        if (device.getPositionY() != null) {
+            existingDevice.setPositionY(device.getPositionY());
+            log.debug("Updated positionY to: {}", device.getPositionY());
+        }
+
         Device updatedDevice = deviceRepository.save(existingDevice);
-        log.info("Device updated successfully: {} with ID: {}", updatedDevice.getDeviceCode(), updatedDevice.getId());
+        log.info("Device updated successfully: {} with ID: {}, position: ({}, {})",
+            updatedDevice.getDeviceCode(), updatedDevice.getId(),
+            updatedDevice.getPositionX(), updatedDevice.getPositionY());
 
         return updatedDevice;
     }

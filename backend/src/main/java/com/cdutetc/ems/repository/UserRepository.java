@@ -107,4 +107,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
      */
     @Query("SELECT u FROM User u LEFT JOIN FETCH u.company WHERE u.username LIKE %:username%")
     Page<User> findByUsernameContainingWithCompany(@Param("username") String username, Pageable pageable);
+
+    /**
+     * 根据ID查找用户并预加载企业信息
+     */
+    @Query("SELECT u FROM User u LEFT JOIN FETCH u.company WHERE u.id = :id")
+    Optional<User> findByIdWithCompany(@Param("id") Long id);
 }

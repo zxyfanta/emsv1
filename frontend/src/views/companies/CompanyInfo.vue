@@ -1,10 +1,9 @@
 <template>
-  <div class="company-form">
+  <div class="company-info">
     <el-card>
       <template #header>
         <div class="card-header">
-          <span>{{ isEdit ? '编辑企业' : '添加企业' }}</span>
-          <el-button @click="handleBack">返回</el-button>
+          <span>企业信息</span>
         </div>
       </template>
 
@@ -55,19 +54,15 @@
           />
         </el-form-item>
 
-        <el-form-item label="状态" prop="status">
-          <el-radio-group v-model="formData.status">
-            <el-radio value="ACTIVE">活跃</el-radio>
-            <el-radio value="INACTIVE">非活跃</el-radio>
-          </el-radio-group>
+        <el-form-item label="用户数">
+          <el-tag>{{ userCount }}</el-tag>
         </el-form-item>
 
         <el-form-item>
           <el-button type="primary" @click="handleSubmit" :loading="submitting">
-            {{ isEdit ? '保存' : '创建' }}
+            保存
           </el-button>
           <el-button @click="handleReset">重置</el-button>
-          <el-button @click="handleBack">取消</el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -75,26 +70,21 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { getCompanyDetail, createCompany, updateCompany } from '@/api/company'
+import { getCurrentCompanyInfo, updateCurrentCompany } from '@/api/company'
 
-const router = useRouter()
-const route = useRoute()
 const formRef = ref(null)
 const loading = ref(false)
 const submitting = ref(false)
-
-const isEdit = computed(() => !!route.params.id)
+const userCount = ref(0)
 
 const formData = reactive({
   companyName: '',
   contactEmail: '',
   contactPhone: '',
   address: '',
-  description: '',
-  status: 'ACTIVE'
+  description: ''
 })
 
 const rules = {
@@ -103,32 +93,31 @@ const rules = {
     { min: 2, max: 100, message: '长度在 2 到 100 个字符', trigger: 'blur' }
   ],
   contactEmail: [
-    { required: true, message: '请输入联系邮箱', trigger: 'blur' },
     { type: 'email', message: '请输入正确的邮箱地址', trigger: 'blur' }
   ],
   contactPhone: [
-    { required: true, message: '请输入联系电话', trigger: 'blur' },
     { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号码', trigger: 'blur' }
-  ],
-  status: [
-    { required: true, message: '请选择状态', trigger: 'change' }
   ]
 }
 
-// 加载企业详情（编辑模式）
-const loadCompanyDetail = async () => {
-  if (!isEdit.value) return
-
+// 加载企业信息
+const loadCompanyInfo = async () => {
   loading.value = true
   try {
-    const res = await getCompanyDetail(route.params.id)
+    const res = await getCurrentCompanyInfo()
     if (res.status === 200) {
-      Object.assign(formData, res.data)
+      Object.assign(formData, {
+        companyName: res.data.companyName,
+        contactEmail: res.data.contactEmail,
+        contactPhone: res.data.contactPhone,
+        address: res.data.address,
+        description: res.data.description
+      })
+      userCount.value = res.data.userCount || 0
     }
   } catch (error) {
-    console.error('加载企业详情失败:', error)
-    ElMessage.error('加载企业详情失败')
-    handleBack()
+    console.error('加载企业信息失败:', error)
+    ElMessage.error('加载企业信息失败')
   } finally {
     loading.value = false
   }
@@ -141,25 +130,15 @@ const handleSubmit = async () => {
 
     submitting.value = true
 
-    if (isEdit.value) {
-      // 更新企业
-      const res = await updateCompany(route.params.id, formData)
-      if (res.status === 200) {
-        ElMessage.success('更新成功')
-        handleBack()
-      }
-    } else {
-      // 创建企业
-      const res = await createCompany(formData)
-      if (res.status === 200 || res.status === 201) {
-        ElMessage.success('创建成功')
-        handleBack()
-      }
+    const res = await updateCurrentCompany(formData)
+    if (res.status === 200) {
+      ElMessage.success('更新成功')
+      await loadCompanyInfo() // 重新加载数据
     }
   } catch (error) {
-    if (error !== false) { // 排除表单验证错误
+    if (error !== false) {
       console.error('提交失败:', error)
-      ElMessage.error(isEdit.value ? '更新失败' : '创建失败')
+      ElMessage.error('更新失败')
     }
   } finally {
     submitting.value = false
@@ -168,16 +147,11 @@ const handleSubmit = async () => {
 
 // 重置表单
 const handleReset = () => {
-  formRef.value.resetFields()
-}
-
-// 返回列表
-const handleBack = () => {
-  router.push('/companies')
+  loadCompanyInfo()
 }
 
 onMounted(() => {
-  loadCompanyDetail()
+  loadCompanyInfo()
 })
 </script>
 
@@ -188,7 +162,7 @@ onMounted(() => {
   align-items: center;
 }
 
-.company-form {
+.company-info {
   max-width: 800px;
   margin: 0 auto;
 }

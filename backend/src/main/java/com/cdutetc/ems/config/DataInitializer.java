@@ -82,7 +82,6 @@ public class DataInitializer implements CommandLineRunner {
         }
 
         Company company = new Company();
-        company.setCompanyCode("DEFAULT_COMPANY");
         company.setCompanyName("默认测试企业");
         company.setContactEmail("admin@ems.com");
         company.setContactPhone("13800138000");

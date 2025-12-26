@@ -14,45 +14,48 @@
     >
       <!-- 遍历所有菜单分组 -->
       <template v-for="category in menuCategories" :key="category.key">
-        <!-- 数据概览特殊处理（顶级独立项，不使用子菜单） -->
-        <template v-if="category.key === '数据概览'">
-          <template v-for="route in getCategoryRoutes(category.key)" :key="route.path">
-            <el-menu-item
-              v-if="!route.meta?.hidden"
-              :index="route.path"
-              :route="route.path"
-            >
-              <el-icon v-if="route.meta?.icon">
-                <component :is="getIcon(route.meta.icon)" />
-              </el-icon>
-              <template #title>{{ route.meta?.title }}</template>
-            </el-menu-item>
+        <!-- 检查该分组是否有可显示的路由 -->
+        <template v-if="getCategoryRoutes(category.key).length > 0">
+          <!-- 数据概览特殊处理（顶级独立项，不使用子菜单） -->
+          <template v-if="category.key === '数据概览'">
+            <template v-for="route in getCategoryRoutes(category.key)" :key="route.path">
+              <el-menu-item
+                v-if="!route.meta?.hidden"
+                :index="route.path"
+                :route="route.path"
+              >
+                <el-icon v-if="route.meta?.icon">
+                  <component :is="getIcon(route.meta.icon)" />
+                </el-icon>
+                <template #title>{{ route.meta?.title }}</template>
+              </el-menu-item>
+            </template>
           </template>
+
+          <!-- 其他分组显示为子菜单 -->
+          <el-sub-menu v-else :index="category.key">
+            <template #title>
+              <el-icon v-if="category.icon">
+                <component :is="getIcon(category.icon)" />
+              </el-icon>
+              <span>{{ category.key }}</span>
+            </template>
+
+            <!-- 该分组下的所有路由 -->
+            <template v-for="route in getCategoryRoutes(category.key)" :key="route.path">
+              <el-menu-item
+                v-if="!route.meta?.hidden"
+                :index="route.path"
+                :route="route.path"
+              >
+                <el-icon v-if="route.meta?.icon">
+                  <component :is="getIcon(route.meta.icon)" />
+                </el-icon>
+                <template #title>{{ route.meta?.title }}</template>
+              </el-menu-item>
+            </template>
+          </el-sub-menu>
         </template>
-
-        <!-- 其他分组显示为子菜单 -->
-        <el-sub-menu v-else :index="category.key">
-          <template #title>
-            <el-icon v-if="category.icon">
-              <component :is="getIcon(category.icon)" />
-            </el-icon>
-            <span>{{ category.key }}</span>
-          </template>
-
-          <!-- 该分组下的所有路由 -->
-          <template v-for="route in getCategoryRoutes(category.key)" :key="route.path">
-            <el-menu-item
-              v-if="!route.meta?.hidden"
-              :index="route.path"
-              :route="route.path"
-            >
-              <el-icon v-if="route.meta?.icon">
-                <component :is="getIcon(route.meta.icon)" />
-              </el-icon>
-              <template #title>{{ route.meta?.title }}</template>
-            </el-menu-item>
-          </template>
-        </el-sub-menu>
       </template>
     </el-menu>
   </div>

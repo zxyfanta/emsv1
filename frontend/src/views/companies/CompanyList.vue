@@ -12,8 +12,7 @@
       </template>
 
       <el-table :data="tableData" v-loading="loading" stripe>
-        <el-table-column prop="companyCode" label="企业编码" width="150" />
-        <el-table-column prop="companyName" label="企业名称" width="200" />
+        <el-table-column prop="companyName" label="企业名称" width="250" />
         <el-table-column prop="contactEmail" label="联系邮箱" width="200" />
         <el-table-column prop="contactPhone" label="联系电话" width="150" />
         <el-table-column prop="address" label="地址" />

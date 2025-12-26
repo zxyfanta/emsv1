@@ -33,7 +33,6 @@ public class UserResponse {
     @AllArgsConstructor
     public static class CompanyInfo {
         private Long id;
-        private String companyCode;
         private String companyName;
         private String contactEmail;
         private String contactPhone;
@@ -45,7 +44,6 @@ public class UserResponse {
         if (user.getCompany() != null) {
             companyInfo = CompanyInfo.builder()
                     .id(user.getCompany().getId())
-                    .companyCode(user.getCompany().getCompanyCode())
                     .companyName(user.getCompany().getCompanyName())
                     .contactEmail(user.getCompany().getContactEmail())
                     .contactPhone(user.getCompany().getContactPhone())

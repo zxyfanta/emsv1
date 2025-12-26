@@ -21,11 +21,6 @@ public interface CompanyService {
     Company findById(Long id);
 
     /**
-     * 根据企业编码查找企业
-     */
-    Company findByCompanyCode(String companyCode);
-
-    /**
      * 更新企业信息
      */
     Company updateCompany(Long id, Company company);
@@ -44,11 +39,6 @@ public interface CompanyService {
      * 根据企业名称模糊查询
      */
     Page<Company> findByCompanyNameContaining(String name, Pageable pageable);
-
-    /**
-     * 检查企业编码是否存在
-     */
-    boolean existsByCompanyCode(String companyCode);
 
     /**
      * 更新企业状态

@@ -19,16 +19,6 @@ import java.util.Optional;
 public interface CompanyRepository extends JpaRepository<Company, Long> {
 
     /**
-     * 根据企业编码查找企业
-     */
-    Optional<Company> findByCompanyCode(String companyCode);
-
-    /**
-     * 检查企业编码是否存在
-     */
-    boolean existsByCompanyCode(String companyCode);
-
-    /**
      * 根据企业名称查找企业
      */
     Optional<Company> findByCompanyName(String companyName);

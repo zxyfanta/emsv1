@@ -59,6 +59,13 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(readOnly = true)
+    public User findByIdWithCompany(Long id) {
+        return userRepository.findByIdWithCompany(id)
+                .orElseThrow(() -> new IllegalArgumentException("用户不存在: " + id));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public User findByUsername(String username) {
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("用户不存在: " + username));

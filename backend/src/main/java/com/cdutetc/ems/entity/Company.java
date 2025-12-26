@@ -26,11 +26,6 @@ public class Company extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank(message = "企业编码不能为空")
-    @Size(max = 50, message = "企业编码长度不能超过50个字符")
-    @Column(name = "company_code", nullable = false, unique = true, length = 50)
-    private String companyCode;
-
     @NotBlank(message = "企业名称不能为空")
     @Size(max = 100, message = "企业名称长度不能超过100个字符")
     @Column(name = "company_name", nullable = false, length = 100)

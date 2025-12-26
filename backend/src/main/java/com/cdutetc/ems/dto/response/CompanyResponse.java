@@ -18,11 +18,11 @@ import java.time.LocalDateTime;
 public class CompanyResponse {
 
     private Long id;
-    private String companyCode;
     private String companyName;
     private String contactEmail;
     private String contactPhone;
     private String address;
+    private String description;
     private String status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -31,11 +31,11 @@ public class CompanyResponse {
     public static CompanyResponse fromCompany(Company company) {
         return CompanyResponse.builder()
                 .id(company.getId())
-                .companyCode(company.getCompanyCode())
                 .companyName(company.getCompanyName())
                 .contactEmail(company.getContactEmail())
                 .contactPhone(company.getContactPhone())
                 .address(company.getAddress())
+                .description(company.getDescription())
                 .status(company.getStatus().name())
                 .createdAt(company.getCreatedAt())
                 .updatedAt(company.getUpdatedAt())
@@ -45,11 +45,11 @@ public class CompanyResponse {
     public static CompanyResponse fromCompanyWithUserCount(Company company, Long userCount) {
         return CompanyResponse.builder()
                 .id(company.getId())
-                .companyCode(company.getCompanyCode())
                 .companyName(company.getCompanyName())
                 .contactEmail(company.getContactEmail())
                 .contactPhone(company.getContactPhone())
                 .address(company.getAddress())
+                .description(company.getDescription())
                 .status(company.getStatus().name())
                 .createdAt(company.getCreatedAt())
                 .updatedAt(company.getUpdatedAt())

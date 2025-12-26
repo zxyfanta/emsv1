@@ -162,26 +162,9 @@ const handleSubmit = async () => {
       if (isEdit.value) {
         await updateDevice(route.params.id, form)
         ElMessage.success('更新成功')
-
-        // 触发自定义事件，通知其他页面刷新设备数据
-        window.dispatchEvent(new CustomEvent('device-updated', {
-          detail: {
-            deviceId: route.params.id,
-            type: 'updated'
-          }
-        }))
-        console.log('[设备编辑] 已触发设备更新事件')
       } else {
         await createDevice(form)
         ElMessage.success('创建成功')
-
-        // 触发自定义事件，通知其他页面刷新设备数据
-        window.dispatchEvent(new CustomEvent('device-updated', {
-          detail: {
-            type: 'created'
-          }
-        }))
-        console.log('[设备创建] 已触发设备更新事件')
       }
       handleBack()
     } catch (error) {
