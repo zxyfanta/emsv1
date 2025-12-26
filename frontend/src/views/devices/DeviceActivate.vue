@@ -155,6 +155,10 @@ const router = useRouter()
 const step = ref(1)
 const loading = ref(false)
 
+// 表单引用
+const formRef = ref(null)
+const codeFormRef = ref(null)
+
 // 激活码表单
 const codeForm = reactive({
   activationCode: ''
@@ -231,6 +235,13 @@ const prevStep = () => {
 
 // 激活设备
 const handleActivate = async () => {
+  // 验证表单
+  const formValid = await formRef.value.validate().catch(() => false)
+  if (!formValid) {
+    ElMessage.warning('请填写完整的设备信息')
+    return
+  }
+
   try {
     loading.value = true
     const res = await activateDevice({
@@ -244,6 +255,17 @@ const handleActivate = async () => {
 
     if (res.status === 200) {
       ElMessage.success('设备激活成功！')
+
+      // 触发自定义事件，通知其他页面刷新设备数据
+      window.dispatchEvent(new CustomEvent('device-updated', {
+        detail: {
+          deviceId: res.data.id,
+          deviceCode: res.data.deviceCode,
+          type: 'activated'
+        }
+      }))
+      console.log('[设备激活] 已触发设备更新事件')
+
       setTimeout(() => {
         router.push('/devices/list')
       }, 1500)

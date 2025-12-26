@@ -198,6 +198,15 @@ public class DeviceService {
     }
 
     /**
+     * 根据ID获取设备（管理员专用，不检查企业权限）
+     */
+    @Transactional(readOnly = true)
+    public Device getDeviceById(Long id) {
+        log.debug("Getting device by ID: {}", id);
+        return deviceRepository.findById(id).orElse(null);
+    }
+
+    /**
      * 获取设备统计信息
      */
     @Transactional(readOnly = true)

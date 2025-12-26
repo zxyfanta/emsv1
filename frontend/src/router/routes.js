@@ -176,17 +176,6 @@ export const adminRoutes = [
       order: 14
     }
   },
-  {
-    path: '/admin/devices/activation',
-    name: 'DeviceActivationManagement',
-    component: () => import('@/views/admin/DeviceActivationManagement.vue'),
-    meta: {
-      title: '激活码管理',
-      icon: 'Key',
-      category: '设备管理',
-      order: 15
-    }
-  },
 
   // 系统管理
   {

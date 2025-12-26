@@ -443,18 +443,33 @@ public class DataInitializer implements CommandLineRunner {
 
     /**
      * 生成唯一的激活码
+     * 格式: EMS-{设备类型缩写}-{随机码8位}
+     * 例如: EMS-RAD-X7K9P3M2
      */
-    private String generateActivationCode() {
-        return UUID.randomUUID().toString().replace("-", "").substring(0, 16).toUpperCase();
+    private String generateActivationCode(Device device) {
+        String prefix = device.getDeviceType() == DeviceType.RADIATION_MONITOR ? "RAD" : "ENV";
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        java.util.Random random = new java.util.Random();
+        StringBuilder sb = new StringBuilder(8);
+        for (int i = 0; i < 8; i++) {
+            sb.append(chars.charAt(random.nextInt(chars.length())));
+        }
+        String randomCode = sb.toString();
+        return String.format("EMS-%s-%s", prefix, randomCode);
     }
 
     /**
      * 为设备创建激活码
      */
     private void createActivationCode(Device device) {
+        String code;
+        do {
+            code = generateActivationCode(device);
+        } while (activationCodeRepository.existsByCode(code));
+
         DeviceActivationCode activationCode = new DeviceActivationCode();
         activationCode.setDevice(device);
-        activationCode.setCode(generateActivationCode());
+        activationCode.setCode(code);
         activationCode.setGeneratedAt(LocalDateTime.now());
         activationCode.setExpiresAt(LocalDateTime.now().plusDays(30)); // 30天有效期
         activationCode.setStatus(ActivationCodeStatus.UNUSED);

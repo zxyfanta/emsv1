@@ -184,11 +184,13 @@
         </el-table>
 
         <div class="result-actions">
-          <el-button @click="importResult = null">关闭结果</el-button>
+          <el-button type="primary" @click="goToDeviceManagement">
+            查看设备列表
+          </el-button>
           <el-button type="success" @click="copyAllCodes">
             复制全部激活码
           </el-button>
-          <el-button type="primary" @click="refreshPage">
+          <el-button @click="refreshPage">
             继续导入
           </el-button>
         </div>
@@ -335,6 +337,11 @@ const refreshPage = () => {
   importResult.value = null
   // 添加默认行
   addDeviceRow()
+}
+
+// 跳转到设备管理页面
+const goToDeviceManagement = () => {
+  router.push('/admin/devices/list')
 }
 
 // 获取设备类型名称

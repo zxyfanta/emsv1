@@ -29,10 +29,19 @@
         </template>
       </el-table-column>
       <el-table-column prop="location" label="位置" min-width="120" />
-      <el-table-column label="操作" width="200" fixed="right">
+      <el-table-column label="操作" width="280" fixed="right">
         <template #default="{ row }">
           <el-button link type="primary" size="small" @click="handleView(row)">查看</el-button>
           <el-button link type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
+          <el-button
+            v-if="row.activationStatus === 'PENDING'"
+            link
+            type="success"
+            size="small"
+            @click="handleCopyActivationCode(row)"
+          >
+            复制激活码
+          </el-button>
           <el-button link type="danger" size="small" @click="handleDelete(row)">删除</el-button>
         </template>
       </el-table-column>
@@ -55,7 +64,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getDeviceList, deleteDevice } from '@/api/device'
+import { getDeviceList, deleteDevice, getDeviceActivationCode } from '@/api/device'
 
 const props = defineProps({
   showAll: {
@@ -170,6 +179,27 @@ const handleDelete = async (row) => {
       console.error('删除设备失败:', error)
       ElMessage.error('删除设备失败')
     }
+  } finally {
+    loading.value = false
+  }
+}
+
+// 复制激活码
+const handleCopyActivationCode = async (row) => {
+  try {
+    loading.value = true
+    const res = await getDeviceActivationCode(row.id)
+
+    if (res.status === 200 && res.data) {
+      const code = res.data.code
+      await navigator.clipboard.writeText(code)
+      ElMessage.success(`激活码 ${code} 已复制到剪贴板`)
+    } else {
+      ElMessage.warning('该设备没有激活码')
+    }
+  } catch (error) {
+    console.error('获取激活码失败:', error)
+    ElMessage.error('获取激活码失败')
   } finally {
     loading.value = false
   }

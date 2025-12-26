@@ -118,18 +118,10 @@ export const batchImportDevices = (items) => {
   })
 }
 
-// 获取待激活设备列表
-export const getPendingDevices = () => {
+// 获取设备的激活码
+export const getDeviceActivationCode = (deviceId) => {
   return request({
-    url: '/admin/devices/pending',
-    method: 'get'
-  })
-}
-
-// 获取已激活设备列表
-export const getActivatedDevices = () => {
-  return request({
-    url: '/admin/devices/activated',
+    url: `/devices/${deviceId}/activation-code`,
     method: 'get'
   })
 }

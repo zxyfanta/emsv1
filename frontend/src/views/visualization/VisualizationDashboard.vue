@@ -256,7 +256,12 @@ const onCanvasResize = (entries) => {
 
 // 更新3D设备模型
 const updateDevice3DModels = () => {
-  if (!devices3DGroup) return
+  if (!devices3DGroup) {
+    console.warn('[更新3D模型] devices3DGroup 不存在，跳过更新')
+    return
+  }
+
+  console.log('[更新3D模型] 开始更新，有位置的设备数:', devicesWithPosition.value.length)
 
   // 移除旧的设备模型
   scene.remove(devices3DGroup)
@@ -268,6 +273,8 @@ const updateDevice3DModels = () => {
     animated: true
   })
   scene.add(devices3DGroup)
+
+  console.log('[更新3D模型] 更新完成，3D 场景中的设备数:', devices3DGroup.children.length)
 }
 
 // 动画循环
@@ -334,6 +341,7 @@ const loadCompanies = async () => {
 // 加载设备数据
 const loadDevices = async () => {
   try {
+    console.log('[加载设备] 开始加载设备数据...')
     // 管理员：根据选择的企业过滤设备
     // 普通用户：加载自己企业的设备
     const params = { size: 1000 }
@@ -343,11 +351,26 @@ const loadDevices = async () => {
 
     const res = await getAllDevices(params)
     if (res.status === 200) {
-      devices.value = res.data.content || []
+      const newDevices = res.data.content || []
+      console.log('[加载设备] API 返回设备数:', newDevices.length)
+
+      // 检查是否有位置变化
+      if (newDevices.length > 0) {
+        const sampleDevice = newDevices[0]
+        console.log('[加载设备] 示例设备:', {
+          id: sampleDevice.id,
+          name: sampleDevice.deviceName,
+          positionX: sampleDevice.positionX,
+          positionY: sampleDevice.positionY
+        })
+      }
+
+      devices.value = newDevices
       // 更新3D设备模型
       updateDevice3DModels()
     }
   } catch (error) {
+    console.error('[加载设备] 失败:', error)
     ElMessage.error('加载设备数据失败')
   }
 }
@@ -383,6 +406,15 @@ const handleCompanyChange = (companyId) => {
   loadDevices()
 }
 
+// 处理设备更新事件
+const handleDeviceUpdate = (event) => {
+  console.log('[可视化大屏] 收到设备更新事件:', event.detail)
+  console.log('[可视化大屏] 当前设备数量:', devices.value.length)
+  loadDevices().then(() => {
+    console.log('[可视化大屏] 刷新完成，新设备数量:', devices.value.length)
+  })
+}
+
 // 监听企业切换
 watch(selectedCompanyId, () => {
   if (selectedCompanyId.value) {
@@ -396,6 +428,10 @@ onMounted(async () => {
 
   // 立即加载设备数据，不依赖 canvasContainer 的就绪状态
   loadDevices()
+
+  // 监听设备更新事件
+  window.addEventListener('device-updated', handleDeviceUpdate)
+  console.log('[可视化大屏] 已注册设备更新事件监听')
 
   // 等待 DOM 完全渲染（dv-full-screen-container 需要更多时间初始化）
   await nextTick()
@@ -425,6 +461,10 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(() => {
+  // 清理事件监听
+  window.removeEventListener('device-updated', handleDeviceUpdate)
+  console.log('[可视化大屏] 已清理设备更新事件监听')
+
   if (resizeObserver) {
     resizeObserver.disconnect()
   }

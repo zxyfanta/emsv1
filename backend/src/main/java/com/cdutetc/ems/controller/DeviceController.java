@@ -358,4 +358,32 @@ public class DeviceController {
                     .body(ApiResponse.error("设备激活失败，请稍后重试"));
         }
     }
+
+    /**
+     * 获取设备的激活码（管理员专用）
+     */
+    @GetMapping("/{id}/activation-code")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<ActivationCodeResponse>> getDeviceActivationCode(@PathVariable Long id) {
+        try {
+            com.cdutetc.ems.entity.Device device = deviceService.getDeviceById(id);
+            if (device == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(ApiResponse.notFound("设备不存在"));
+            }
+
+            // 查询激活码
+            ActivationCodeResponse codeInfo = deviceActivationService.getDeviceActivationCode(device);
+            if (codeInfo == null) {
+                return ResponseEntity.ok(ApiResponse.success("该设备没有激活码", null));
+            }
+
+            return ResponseEntity.ok(ApiResponse.success("查询成功", codeInfo));
+
+        } catch (Exception e) {
+            log.error("Error getting device activation code: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("获取激活码失败，请稍后重试"));
+        }
+    }
 }

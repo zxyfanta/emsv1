@@ -39,7 +39,7 @@ public interface DeviceRepository extends JpaRepository<Device, Long> {
     /**
      * 根据企业ID分页查询设备
      */
-    @Query("SELECT d FROM Device d WHERE d.company.id = :companyId")
+    @Query("SELECT d FROM Device d LEFT JOIN FETCH d.company WHERE d.company.id = :companyId")
     Page<Device> findByCompanyId(@Param("companyId") Long companyId, Pageable pageable);
 
     /**
@@ -55,19 +55,19 @@ public interface DeviceRepository extends JpaRepository<Device, Long> {
     /**
      * 根据企业ID和设备类型查找设备
      */
-    @Query("SELECT d FROM Device d WHERE d.company.id = :companyId AND d.deviceType = :deviceType")
+    @Query("SELECT d FROM Device d LEFT JOIN FETCH d.company WHERE d.company.id = :companyId AND d.deviceType = :deviceType")
     List<Device> findByCompanyIdAndDeviceType(@Param("companyId") Long companyId, @Param("deviceType") DeviceType deviceType);
 
     /**
      * 根据企业ID和设备状态查找设备
      */
-    @Query("SELECT d FROM Device d WHERE d.company.id = :companyId AND d.status = :status")
+    @Query("SELECT d FROM Device d LEFT JOIN FETCH d.company WHERE d.company.id = :companyId AND d.status = :status")
     List<Device> findByCompanyIdAndStatus(@Param("companyId") Long companyId, @Param("status") DeviceStatus status);
 
     /**
      * 根据企业ID、设备类型和状态查找设备
      */
-    @Query("SELECT d FROM Device d WHERE d.company.id = :companyId AND d.deviceType = :deviceType AND d.status = :status")
+    @Query("SELECT d FROM Device d LEFT JOIN FETCH d.company WHERE d.company.id = :companyId AND d.deviceType = :deviceType AND d.status = :status")
     List<Device> findByCompanyIdAndDeviceTypeAndStatus(
             @Param("companyId") Long companyId,
             @Param("deviceType") DeviceType deviceType,
@@ -82,7 +82,7 @@ public interface DeviceRepository extends JpaRepository<Device, Long> {
     /**
      * 根据企业ID和设备名称模糊查询
      */
-    @Query("SELECT d FROM Device d WHERE d.company.id = :companyId AND d.deviceName LIKE %:deviceName%")
+    @Query("SELECT d FROM Device d LEFT JOIN FETCH d.company WHERE d.company.id = :companyId AND d.deviceName LIKE %:deviceName%")
     Page<Device> findByCompanyIdAndDeviceNameContaining(
             @Param("companyId") Long companyId,
             @Param("deviceName") String deviceName,
@@ -97,7 +97,7 @@ public interface DeviceRepository extends JpaRepository<Device, Long> {
     /**
      * 根据企业ID查找最近在线的设备
      */
-    @Query("SELECT d FROM Device d WHERE d.company.id = :companyId AND d.lastOnlineAt >= :since")
+    @Query("SELECT d FROM Device d LEFT JOIN FETCH d.company WHERE d.company.id = :companyId AND d.lastOnlineAt >= :since")
     List<Device> findRecentlyOnlineDevicesByCompany(
             @Param("companyId") Long companyId,
             @Param("since") LocalDateTime since);
@@ -131,25 +131,25 @@ public interface DeviceRepository extends JpaRepository<Device, Long> {
     /**
      * 根据企业ID和设备ID查找设备
      */
-    @Query("SELECT d FROM Device d WHERE d.id = :id AND d.company.id = :companyId")
+    @Query("SELECT d FROM Device d LEFT JOIN FETCH d.company WHERE d.id = :id AND d.company.id = :companyId")
     Optional<Device> findByIdAndCompanyId(@Param("id") Long id, @Param("companyId") Long companyId);
 
     /**
      * 根据企业ID和设备类型分页查询设备
      */
-    @Query("SELECT d FROM Device d WHERE d.company.id = :companyId AND d.deviceType = :deviceType")
+    @Query("SELECT d FROM Device d LEFT JOIN FETCH d.company WHERE d.company.id = :companyId AND d.deviceType = :deviceType")
     Page<Device> findByCompanyIdAndDeviceType(@Param("companyId") Long companyId, @Param("deviceType") DeviceType deviceType, Pageable pageable);
 
     /**
      * 根据企业ID和关键字搜索设备
      */
-    @Query("SELECT d FROM Device d WHERE d.company.id = :companyId AND (d.deviceName LIKE %:keyword% OR d.deviceCode LIKE %:keyword% OR d.description LIKE %:keyword%)")
+    @Query("SELECT d FROM Device d LEFT JOIN FETCH d.company WHERE d.company.id = :companyId AND (d.deviceName LIKE %:keyword% OR d.deviceCode LIKE %:keyword% OR d.description LIKE %:keyword%)")
     Page<Device> searchByCompanyIdAndKeyword(@Param("companyId") Long companyId, @Param("keyword") String keyword, Pageable pageable);
 
     /**
      * 根据设备编码和企业ID查找设备
      */
-    @Query("SELECT d FROM Device d WHERE d.deviceCode = :deviceCode AND d.company.id = :companyId")
+    @Query("SELECT d FROM Device d LEFT JOIN FETCH d.company WHERE d.deviceCode = :deviceCode AND d.company.id = :companyId")
     Optional<Device> findByDeviceCodeAndCompanyId(@Param("deviceCode") String deviceCode, @Param("companyId") Long companyId);
 
     /**
@@ -182,7 +182,7 @@ public interface DeviceRepository extends JpaRepository<Device, Long> {
     /**
      * 根据企业ID和激活状态分页查询设备
      */
-    @Query("SELECT d FROM Device d WHERE d.company.id = :companyId AND d.activationStatus = :activationStatus")
+    @Query("SELECT d FROM Device d LEFT JOIN FETCH d.company WHERE d.company.id = :companyId AND d.activationStatus = :activationStatus")
     Page<Device> findByCompanyIdAndActivationStatus(
             @Param("companyId") Long companyId,
             @Param("activationStatus") DeviceActivationStatus activationStatus,

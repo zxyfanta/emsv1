@@ -258,4 +258,14 @@ public class DeviceActivationService {
 
         return device;
     }
+
+    /**
+     * 获取设备的激活码信息
+     */
+    @Transactional(readOnly = true)
+    public ActivationCodeResponse getDeviceActivationCode(Device device) {
+        return activationCodeRepository.findByDevice(device)
+                .map(ActivationCodeResponse::fromEntity)
+                .orElse(null);
+    }
 }
