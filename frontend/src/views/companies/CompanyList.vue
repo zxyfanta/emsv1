@@ -48,10 +48,12 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { getCompanyList, deleteCompany as deleteCompanyApi } from '@/api/company'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 
+const router = useRouter()
 const loading = ref(false)
 const tableData = ref([])
 
@@ -81,11 +83,11 @@ const loadData = async () => {
 }
 
 const handleCreate = () => {
-  ElMessage.info('添加企业功能待实现')
+  router.push('/companies/create')
 }
 
 const handleEdit = (row) => {
-  ElMessage.info('编辑功能待实现')
+  router.push(`/companies/${row.id}/edit`)
 }
 
 const handleDelete = (row) => {

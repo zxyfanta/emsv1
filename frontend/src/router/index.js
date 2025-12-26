@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import {
   constantRoutes,
   publicRoutes,
+  mainLayoutRoutes,
   userRoutes,
   adminRoutes,
   notFoundRoute
@@ -10,12 +11,12 @@ import { setupPermissionGuard } from './permission'
 
 /**
  * 创建路由实例
- * 初始时只加载常量路由和公共路由
+ * 初始时只加载常量路由、公共路由和主布局路由
  * 其他路由根据用户角色动态加载
  */
 const router = createRouter({
   history: createWebHistory(),
-  routes: [...constantRoutes, ...publicRoutes]
+  routes: [...constantRoutes, ...publicRoutes, ...mainLayoutRoutes]
 })
 
 /**
@@ -23,6 +24,14 @@ const router = createRouter({
  * 防止重复加载路由
  */
 let routerLoaded = false
+
+/**
+ * 检查路由是否已加载
+ * @returns {Boolean}
+ */
+export function isRouterLoaded() {
+  return routerLoaded
+}
 
 /**
  * 动态添加路由
@@ -36,15 +45,15 @@ export async function setupRouter(userStore) {
   }
 
   try {
-    // 添加所有用户路由（普通用户和管理员都可以访问）
+    // 将所有用户路由作为主布局的子路由添加
     userRoutes.forEach(route => {
-      router.addRoute(route)
+      router.addRoute('MainLayout', route)
     })
 
-    // 如果是管理员，添加管理员路由
+    // 如果是管理员，添加管理员路由作为主布局的子路由
     if (userStore.isAdmin) {
       adminRoutes.forEach(route => {
-        router.addRoute(route)
+        router.addRoute('MainLayout', route)
       })
     }
 
@@ -70,7 +79,7 @@ export function resetRouter() {
   // 创建新的路由实例
   const newRouter = createRouter({
     history: createWebHistory(),
-    routes: [...constantRoutes, ...publicRoutes]
+    routes: [...constantRoutes, ...publicRoutes, ...mainLayoutRoutes]
   })
   // 替换当前路由 matcher
   router.matcher = newRouter.matcher

@@ -47,10 +47,12 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { getUserList, deleteUser as deleteUserApi, resetUserPassword } from '@/api/user'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 
+const router = useRouter()
 const loading = ref(false)
 const tableData = ref([])
 
@@ -80,11 +82,11 @@ const loadData = async () => {
 }
 
 const handleCreate = () => {
-  ElMessage.info('添加用户功能待实现')
+  router.push('/users/create')
 }
 
 const handleEdit = (row) => {
-  ElMessage.info('编辑功能待实现')
+  router.push(`/users/${row.id}/edit`)
 }
 
 const handleResetPassword = (row) => {

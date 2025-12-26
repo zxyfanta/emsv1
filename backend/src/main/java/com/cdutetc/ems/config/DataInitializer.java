@@ -243,6 +243,66 @@ public class DataInitializer implements CommandLineRunner {
 
         Device savedEnv001 = deviceRepository.save(env001);
         log.info("创建Node-RED测试设备: {} (ID: {})", savedEnv001.getDeviceCode(), savedEnv001.getId());
+
+        // ========== 未激活设备（用于测试激活功能） ==========
+        // 创建待激活的辐射设备
+        Device pendingRad1 = new Device();
+        pendingRad1.setDeviceCode("RAD-PENDING-001");
+        pendingRad1.setDeviceName("待激活辐射监测仪001");
+        pendingRad1.setDeviceType(DeviceType.RADIATION_MONITOR);
+        pendingRad1.setActivationStatus(DeviceActivationStatus.PENDING);
+        pendingRad1.setStatus(DeviceStatus.OFFLINE);
+        pendingRad1.setLocation("待安装区域A");
+        pendingRad1.setDescription("待激活设备，用于测试激活功能");
+        pendingRad1.setManufacturer("测试设备厂商");
+        pendingRad1.setModel("RAD-Monitor-v2");
+        pendingRad1.setSerialNumber("RAD-PEND-001");
+        pendingRad1.setInstallDate(null);
+        pendingRad1.setLastOnlineAt(null);
+        pendingRad1.setCompany(company);
+
+        Device savedPendingRad1 = deviceRepository.save(pendingRad1);
+        log.info("创建待激活辐射设备: {} (ID: {})", savedPendingRad1.getDeviceCode(), savedPendingRad1.getId());
+
+        // 创建待激活的环境设备
+        Device pendingEnv1 = new Device();
+        pendingEnv1.setDeviceCode("ENV-PENDING-001");
+        pendingEnv1.setDeviceName("待激活环境监测站001");
+        pendingEnv1.setDeviceType(DeviceType.ENVIRONMENT_STATION);
+        pendingEnv1.setActivationStatus(DeviceActivationStatus.PENDING);
+        pendingEnv1.setStatus(DeviceStatus.OFFLINE);
+        pendingEnv1.setLocation("待安装区域B");
+        pendingEnv1.setDescription("待激活设备，用于测试激活功能");
+        pendingEnv1.setManufacturer("测试设备厂商");
+        pendingEnv1.setModel("ENV-Station-v2");
+        pendingEnv1.setSerialNumber("ENV-PEND-001");
+        pendingEnv1.setInstallDate(null);
+        pendingEnv1.setLastOnlineAt(null);
+        pendingEnv1.setCompany(company);
+
+        Device savedPendingEnv1 = deviceRepository.save(pendingEnv1);
+        log.info("创建待激活环境设备: {} (ID: {})", savedPendingEnv1.getDeviceCode(), savedPendingEnv1.getId());
+
+        // 创建更多待激活设备（批量测试）
+        for (int i = 2; i <= 5; i++) {
+            Device pendingDevice = new Device();
+            pendingDevice.setDeviceCode(String.format("RAD-PENDING-%03d", i));
+            pendingDevice.setDeviceName(String.format("待激活辐射监测仪%03d", i));
+            pendingDevice.setDeviceType(DeviceType.RADIATION_MONITOR);
+            pendingDevice.setActivationStatus(DeviceActivationStatus.PENDING);
+            pendingDevice.setStatus(DeviceStatus.OFFLINE);
+            pendingDevice.setLocation("待安装区域C-" + i);
+            pendingDevice.setDescription("待激活设备，用于测试批量激活功能");
+            pendingDevice.setManufacturer("测试设备厂商");
+            pendingDevice.setModel("RAD-Monitor-v2");
+            pendingDevice.setSerialNumber(String.format("RAD-PEND-%03d", i));
+            pendingDevice.setInstallDate(null);
+            pendingDevice.setLastOnlineAt(null);
+            pendingDevice.setCompany(company);
+
+            Device savedPendingDevice = deviceRepository.save(pendingDevice);
+            log.info("创建待激活设备: {} (ID: {})", savedPendingDevice.getDeviceCode(), savedPendingDevice.getId());
+        }
     }
 
     /**

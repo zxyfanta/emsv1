@@ -33,12 +33,6 @@ export const constantRoutes = [
 // ============================================
 export const publicRoutes = [
   {
-    path: '/',
-    component: () => import('@/components/Layout/MainLayout.vue'),
-    redirect: '/dashboard',
-    meta: { requiresAuth: true }
-  },
-  {
     path: '/visualization',
     name: 'Visualization',
     component: () => import('@/views/visualization/VisualizationDashboard.vue'),
@@ -50,6 +44,19 @@ export const publicRoutes = [
       category: '数据概览',
       order: 0
     }
+  }
+]
+
+// ============================================
+// 主布局路由（包含所有需要 MainLayout 的子路由）
+// ============================================
+export const mainLayoutRoutes = [
+  {
+    path: '/',
+    name: 'MainLayout',
+    component: () => import('@/components/Layout/MainLayout.vue'),
+    meta: { requiresAuth: true },
+    children: [] // 子路由将在 setupRouter 中动态添加
   }
 ]
 
@@ -194,6 +201,24 @@ export const adminRoutes = [
     }
   },
   {
+    path: '/companies/create',
+    name: 'CompanyCreate',
+    component: () => import('@/views/companies/CompanyForm.vue'),
+    meta: {
+      title: '添加企业',
+      hidden: true
+    }
+  },
+  {
+    path: '/companies/:id/edit',
+    name: 'CompanyEdit',
+    component: () => import('@/views/companies/CompanyForm.vue'),
+    meta: {
+      title: '编辑企业',
+      hidden: true
+    }
+  },
+  {
     path: '/users',
     name: 'UserList',
     component: () => import('@/views/users/UserList.vue'),
@@ -202,6 +227,24 @@ export const adminRoutes = [
       icon: 'User',
       category: '系统管理',
       order: 31
+    }
+  },
+  {
+    path: '/users/create',
+    name: 'UserCreate',
+    component: () => import('@/views/users/UserForm.vue'),
+    meta: {
+      title: '添加用户',
+      hidden: true
+    }
+  },
+  {
+    path: '/users/:id/edit',
+    name: 'UserEdit',
+    component: () => import('@/views/users/UserForm.vue'),
+    meta: {
+      title: '编辑用户',
+      hidden: true
     }
   }
 ]

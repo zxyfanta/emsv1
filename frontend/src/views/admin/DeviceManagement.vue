@@ -88,6 +88,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Plus, Upload, Key, CircleCheck } from '@element-plus/icons-vue'
 import { getDeviceStatistics } from '@/api/device'
+import DeviceListTable from '@/components/admin/DeviceListTable.vue'
 
 const router = useRouter()
 const activeTab = ref('all')
@@ -137,31 +138,6 @@ const handleTabChange = (tabName) => {
 onMounted(() => {
   loadStatistics()
 })
-</script>
-
-<script setup>
-// 为了简化，这里暂时使用一个简单的表格组件占位
-// 实际应该复用 DeviceList.vue 中的表格逻辑
-const DeviceListTable = {
-  name: 'DeviceListTable',
-  props: {
-    showAll: Boolean,
-    activationStatus: String
-  },
-  template: `
-    <div class="device-table-container">
-      <el-alert
-        title="表格功能复用自 DeviceList.vue，请根据需要显示对应设备列表"
-        type="info"
-        :closable="false"
-        show-icon
-      />
-      <div style="margin-top: 20px; text-align: center; color: #909399;">
-        设备列表表格组件（待实现）
-      </div>
-    </div>
-  `
-}
 </script>
 
 <style scoped>

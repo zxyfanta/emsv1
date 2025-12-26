@@ -3,7 +3,8 @@
  * 实现路由守卫和动态路由加载
  */
 import { useUserStore } from '@/store/user'
-import { setupRouter } from './index'
+import { useAppStore } from '@/store/app'
+import { setupRouter, isRouterLoaded } from './index'
 
 /**
  * 设置路由守卫
@@ -12,6 +13,7 @@ import { setupRouter } from './index'
 export function setupPermissionGuard(router) {
   router.beforeEach(async (to, from, next) => {
     const userStore = useUserStore()
+    const appStore = useAppStore()
     const token = localStorage.getItem('token')
 
     // ========================================
@@ -40,20 +42,28 @@ export function setupPermissionGuard(router) {
     // ========================================
     // 3. 获取用户信息并加载动态路由
     // ========================================
-    if (!userStore.userInfo) {
+    // 检查是否需要加载路由：userInfo不存在 或 路由未加载（页面刷新后routerLoaded被重置）
+    if (!userStore.userInfo || !isRouterLoaded()) {
       try {
-        // 获取用户信息
-        await userStore.fetchUserInfo()
+        // 如果用户信息不存在，先获取用户信息
+        if (!userStore.userInfo) {
+          await userStore.fetchUserInfo()
+        }
 
-        // 用户信息获取成功后，动态添加路由
+        // 动态添加路由
         await setupRouter(userStore)
 
-        // 重新进入当前路由（确保动态路由已加载）
-        next({ ...to, replace: true })
+        // 动态路由加载后，跳转到目标路由
+        // 如果访问的是根路径，重定向到 dashboard
+        if (to.path === '/') {
+          next('/dashboard')
+        } else {
+          next({ ...to, replace: true })
+        }
         return
       } catch (error) {
-        console.error('❌ 获取用户信息失败:', error)
-        // 获取用户信息失败，清除token并跳转到登录页
+        console.error('❌ 获取用户信息或加载路由失败:', error)
+        // 失败，清除token并跳转到登录页
         localStorage.removeItem('token')
         localStorage.removeItem('userInfo')
         next('/login')
@@ -78,7 +88,12 @@ export function setupPermissionGuard(router) {
     }
 
     // ========================================
-    // 5. 通过所有检查，放行
+    // 5. 同步全屏状态
+    // ========================================
+    appStore.setFullscreen(to.meta.fullscreen || false)
+
+    // ========================================
+    // 6. 通过所有检查，放行
     // ========================================
     next()
   })
