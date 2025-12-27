@@ -2,23 +2,15 @@
   <el-dialog
     :model-value="modelValue"
     :title="isEdit ? '编辑视频设备' : '添加视频设备'"
-    width="600px"
+    width="500px"
     @update:model-value="$emit('update:modelValue', $event)"
   >
     <el-form
       ref="formRef"
       :model="form"
       :rules="rules"
-      label-width="120px"
+      label-width="100px"
     >
-      <el-form-item label="设备编码" prop="deviceCode">
-        <el-input
-          v-model="form.deviceCode"
-          placeholder="请输入设备编码（唯一）"
-          :disabled="isEdit"
-        />
-      </el-form-item>
-
       <el-form-item label="设备名称" prop="deviceName">
         <el-input
           v-model="form.deviceName"
@@ -26,31 +18,15 @@
         />
       </el-form-item>
 
-      <el-form-item label="视频流URL" prop="streamUrl">
+      <el-form-item label="IP地址" prop="ipAddress">
         <el-input
-          v-model="form.streamUrl"
-          placeholder="例如：rtsp://192.168.1.100:554/stream"
+          v-model="form.ipAddress"
+          placeholder="例如：192.168.1.100"
+          @input="updateStreamUrl"
         />
         <div class="form-tip">
-          支持 RTSP、RTMP、HLS、FLV、WebRTC 等协议
+          系统将自动生成RTSP流地址：rtsp://IP:554/stream
         </div>
-      </el-form-item>
-
-      <el-form-item label="流类型" prop="streamType">
-        <el-select v-model="form.streamType" placeholder="请选择流类型" style="width: 100%">
-          <el-option label="RTSP" value="RTSP" />
-          <el-option label="RTMP" value="RTMP" />
-          <el-option label="HLS" value="HLS" />
-          <el-option label="FLV" value="FLV" />
-          <el-option label="WebRTC" value="WEBRTC" />
-        </el-select>
-      </el-form-item>
-
-      <el-form-item label="截图URL" prop="snapshotUrl">
-        <el-input
-          v-model="form.snapshotUrl"
-          placeholder="请输入截图URL（可选）"
-        />
       </el-form-item>
 
       <el-form-item label="认证用户名" prop="username">
@@ -66,23 +42,6 @@
           type="password"
           placeholder="请输入认证密码（可选）"
           show-password
-        />
-      </el-form-item>
-
-      <el-form-item label="分辨率" prop="resolution">
-        <el-input
-          v-model="form.resolution"
-          placeholder="例如：1920x1080（可选）"
-        />
-      </el-form-item>
-
-      <el-form-item label="帧率" prop="fps">
-        <el-input-number
-          v-model="form.fps"
-          :min="1"
-          :max="60"
-          placeholder="帧率（可选）"
-          style="width: 100%"
         />
       </el-form-item>
     </el-form>
@@ -121,31 +80,35 @@ const form = ref({
   deviceName: '',
   streamUrl: '',
   streamType: 'RTSP',
-  snapshotUrl: '',
   username: '',
-  password: '',
-  resolution: '',
-  fps: null
+  password: ''
 })
 
 const rules = {
-  deviceCode: [
-    { required: true, message: '请输入设备编码', trigger: 'blur' }
-  ],
   deviceName: [
     { required: true, message: '请输入设备名称', trigger: 'blur' }
   ],
-  streamUrl: [
-    { required: true, message: '请输入视频流URL', trigger: 'blur' },
+  ipAddress: [
+    { required: true, message: '请输入IP地址', trigger: 'blur' },
     {
-      pattern: /^(rtsp|rtmp|http|https):\/\/.+/i,
-      message: '请输入有效的URL',
+      pattern: /^(\d{1,3}\.){3}\d{1,3}$/,
+      message: '请输入有效的IP地址',
       trigger: 'blur'
     }
-  ],
-  streamType: [
-    { required: true, message: '请选择流类型', trigger: 'change' }
   ]
+}
+
+// 生成设备编码
+const generateDeviceCode = () => {
+  const timestamp = Date.now().toString().slice(-6)
+  return `VIDEO-${timestamp}`
+}
+
+// 根据IP地址更新streamUrl
+const updateStreamUrl = () => {
+  if (form.value.ipAddress) {
+    form.value.streamUrl = `rtsp://${form.value.ipAddress}:554/stream`
+  }
 }
 
 const resetForm = () => {
@@ -154,11 +117,8 @@ const resetForm = () => {
     deviceName: '',
     streamUrl: '',
     streamType: 'RTSP',
-    snapshotUrl: '',
     username: '',
-    password: '',
-    resolution: '',
-    fps: null
+    password: ''
   }
   formRef.value?.clearValidate()
 }
@@ -166,16 +126,26 @@ const resetForm = () => {
 // 监听 videoDevice 变化，填充表单
 watch(() => props.videoDevice, (newVal) => {
   if (newVal) {
+    // 从streamUrl中提取IP地址
+    let ipAddress = ''
+    try {
+      const url = newVal.streamUrl || ''
+      const match = url.match(/rtsp:\/\/([\d.]+)/)
+      if (match) {
+        ipAddress = match[1]
+      }
+    } catch (e) {
+      console.warn('解析IP地址失败', e)
+    }
+
     form.value = {
       deviceCode: newVal.deviceCode || '',
       deviceName: newVal.deviceName || '',
       streamUrl: newVal.streamUrl || '',
-      streamType: newVal.streamType || 'RTSP',
-      snapshotUrl: newVal.snapshotUrl || '',
+      streamType: 'RTSP',
       username: newVal.username || '',
       password: '', // 密码不回填
-      resolution: newVal.resolution || '',
-      fps: newVal.fps || null
+      ipAddress: ipAddress
     }
   } else {
     resetForm()
@@ -185,6 +155,17 @@ watch(() => props.videoDevice, (newVal) => {
 const handleSubmit = async () => {
   try {
     await formRef.value.validate()
+
+    // 自动生成设备编码（仅创建时）
+    if (!isEdit.value && !form.value.deviceCode) {
+      form.value.deviceCode = generateDeviceCode()
+    }
+
+    // 确保streamUrl已生成
+    if (!form.value.streamUrl && form.value.ipAddress) {
+      updateStreamUrl()
+    }
+
     submitting.value = true
 
     if (isEdit.value) {

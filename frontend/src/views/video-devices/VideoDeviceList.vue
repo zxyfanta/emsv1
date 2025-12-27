@@ -29,13 +29,6 @@
         <!-- 设备名称 -->
         <el-table-column prop="deviceName" label="设备名称" width="180" />
 
-        <!-- 流类型 -->
-        <el-table-column prop="streamType" label="流类型" width="100">
-          <template #default="{ row }">
-            <el-tag size="small">{{ row.streamType }}</el-tag>
-          </template>
-        </el-table-column>
-
         <!-- 企业名称（仅管理员可见） -->
         <el-table-column
           v-if="userStore.isAdmin"
@@ -51,17 +44,6 @@
               {{ row.linkedDevice.deviceCode }}
             </el-tag>
             <el-tag v-else type="info" size="small">未绑定</el-tag>
-          </template>
-        </el-table-column>
-
-        <!-- 分辨率 -->
-        <el-table-column prop="resolution" label="分辨率" width="120" />
-
-        <!-- 帧率 -->
-        <el-table-column prop="fps" label="帧率" width="80">
-          <template #default="{ row }">
-            <span v-if="row.fps">{{ row.fps }} fps</span>
-            <span v-else>-</span>
           </template>
         </el-table-column>
 

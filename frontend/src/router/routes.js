@@ -83,7 +83,7 @@ export const userRoutes = [
     name: 'DeviceList',
     component: () => import('@/views/devices/DeviceList.vue'),
     meta: {
-      title: '我的设备',
+      title: '设备列表',
       icon: 'Monitor',
       category: '设备管理',
       order: 10
@@ -284,8 +284,8 @@ export const adminRoutes = [
     meta: {
       title: '视频设备管理',
       icon: 'VideoCamera',
-      category: '组织管理',
-      order: 32
+      category: '设备管理',
+      order: 15
     }
   }
 ]
