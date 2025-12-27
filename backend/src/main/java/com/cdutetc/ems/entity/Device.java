@@ -66,6 +66,13 @@ public class Device extends BaseEntity {
     @Column(name = "last_online_at")
     private java.time.LocalDateTime lastOnlineAt;
 
+    /**
+     * 最后一次收到设备数据消息的时间
+     * 用于判断设备是否在线（基于是否有数据消息）
+     */
+    @Column(name = "last_message_at")
+    private java.time.LocalDateTime lastMessageAt;
+
     @Size(max = 100, message = "设备厂商长度不能超过100个字符")
     @Column(name = "manufacturer", length = 100)
     private String manufacturer;

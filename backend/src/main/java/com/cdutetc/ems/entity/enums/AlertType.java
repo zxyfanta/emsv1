@@ -5,24 +5,19 @@ package com.cdutetc.ems.entity.enums;
  */
 public enum AlertType {
     /**
-     * 高辐射值告警
+     * CPM突增告警（基于上升率）
      */
-    HIGH_CPM("HIGH_CPM", "辐射值超标"),
-
-    /**
-     * 设备离线告警
-     */
-    OFFLINE("OFFLINE", "设备离线"),
-
-    /**
-     * 设备故障告警
-     */
-    FAULT("FAULT", "设备故障"),
+    CPM_RISE("CPM_RISE", "辐射值突增"),
 
     /**
      * 低电量告警
      */
-    LOW_BATTERY("LOW_BATTERY", "电量不足");
+    LOW_BATTERY("LOW_BATTERY", "电量不足"),
+
+    /**
+     * 设备离线告警（基于超时无数据）
+     */
+    OFFLINE("OFFLINE", "设备离线");
 
     private final String code;
     private final String description;

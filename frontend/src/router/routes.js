@@ -136,6 +136,32 @@ export const userRoutes = [
       category: '系统设置',
       order: 30
     }
+  },
+
+  // 个人设置
+  {
+    path: '/settings',
+    name: 'UserSettings',
+    component: () => import('@/views/user/Settings.vue'),
+    meta: {
+      title: '个人设置',
+      icon: 'Setting',
+      category: '系统设置',
+      order: 31
+    }
+  },
+
+  // 告警管理
+  {
+    path: '/alerts',
+    name: 'AlertList',
+    component: () => import('@/views/alerts/AlertList.vue'),
+    meta: {
+      title: '告警管理',
+      icon: 'Bell',
+      category: '数据查询',
+      order: 22
+    }
   }
 ]
 

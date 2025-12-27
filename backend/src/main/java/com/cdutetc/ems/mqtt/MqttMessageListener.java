@@ -8,6 +8,7 @@ import com.cdutetc.ems.entity.enums.DeviceStatus;
 import com.cdutetc.ems.entity.enums.DeviceType;
 import com.cdutetc.ems.service.AlertService;
 import com.cdutetc.ems.service.DeviceService;
+import com.cdutetc.ems.service.DeviceStatusCacheService;
 import com.cdutetc.ems.service.EnvironmentDeviceDataService;
 import com.cdutetc.ems.service.RadiationDeviceDataService;
 import com.cdutetc.ems.service.SseEmitterService;
@@ -38,6 +39,7 @@ public class MqttMessageListener implements MqttCallback {
     private final EnvironmentDeviceDataService environmentDeviceDataService;
     private final SseEmitterService sseEmitterService;
     private final AlertService alertService;
+    private final DeviceStatusCacheService deviceStatusCacheService;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -141,9 +143,9 @@ public class MqttMessageListener implements MqttCallback {
                 return null;
             }
 
-            // 更新设备最后在线时间
-            device.setLastOnlineAt(LocalDateTime.now());
-            device.setUpdatedAt(LocalDateTime.now());
+            // 更新设备状态缓存（最后消息时间和在线状态）
+            deviceStatusCacheService.updateLastMessageTime(deviceCode, LocalDateTime.now());
+            deviceStatusCacheService.updateStatus(deviceCode, "ONLINE");
 
             return device;
 
@@ -206,6 +208,14 @@ public class MqttMessageListener implements MqttCallback {
             // 保存数据
             com.cdutetc.ems.entity.RadiationDeviceData savedData = radiationDeviceDataService.save(data);
             log.info("💾 辐射设备数据已保存: {}", device.getDeviceCode());
+
+            // 更新缓存：CPM值和电池电压
+            if (savedData.getCpm() != null) {
+                deviceStatusCacheService.updateLastCpm(device.getDeviceCode(), savedData.getCpm());
+            }
+            if (savedData.getBatvolt() != null) {
+                deviceStatusCacheService.updateLastBattery(device.getDeviceCode(), savedData.getBatvolt() / 1000.0); // 转换为伏特
+            }
 
             // SSE推送实时数据
             try {
@@ -279,6 +289,11 @@ public class MqttMessageListener implements MqttCallback {
             // 保存数据
             com.cdutetc.ems.entity.EnvironmentDeviceData savedData = environmentDeviceDataService.save(data);
             log.info("💾 环境设备数据已保存: {}", device.getDeviceCode());
+
+            // 更新缓存：电池电压
+            if (savedData.getBattery() != null) {
+                deviceStatusCacheService.updateLastBattery(device.getDeviceCode(), savedData.getBattery());
+            }
 
             // SSE推送实时数据
             try {

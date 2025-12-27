@@ -81,6 +81,16 @@
         style="margin-top: 20px; justify-content: flex-end"
       />
     </el-card>
+
+    <!-- 设备详情对话框 -->
+    <el-dialog
+      v-model="detailDialogVisible"
+      title="设备详情"
+      width="600px"
+      :close-on-click-modal="false"
+    >
+      <DeviceDetailPanel v-if="selectedDevice" :device="selectedDevice" />
+    </el-dialog>
   </div>
 </template>
 
@@ -92,6 +102,7 @@ import { useUserStore } from '@/store/user'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
+import DeviceDetailPanel from '@/components/visualization/DeviceDetailPanel.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -100,6 +111,8 @@ const isAdmin = computed(() => userStore.isAdmin)
 
 const loading = ref(false)
 const tableData = ref([])
+const detailDialogVisible = ref(false)
+const selectedDevice = ref(null)
 
 const searchForm = reactive({
   deviceCode: '',
@@ -154,8 +167,8 @@ const handleActivate = () => {
 }
 
 const handleView = (row) => {
-  // TODO: 显示设备详情对话框
-  ElMessage.info('查看功能待实现')
+  selectedDevice.value = row
+  detailDialogVisible.value = true
 }
 
 const handleEdit = (row) => {

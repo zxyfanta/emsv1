@@ -1,25 +1,25 @@
 <template>
   <router-view />
+  <AlertNotification />
 </template>
 
 <script setup>
 import { onMounted, onBeforeUnmount } from 'vue'
 import { useUserStore } from '@/store/user'
 import { sseManager } from '@/utils/sse'
+import AlertNotification from '@/components/AlertNotification.vue'
 
 const userStore = useUserStore()
 
 // 应用启动时初始化SSE连接（如果用户已登录）
 onMounted(() => {
   if (userStore.isLoggedIn) {
-    console.log('[App] 用户已登录，初始化SSE连接')
     sseManager.init()
   }
 })
 
 // 应用卸载时断开SSE连接
 onBeforeUnmount(() => {
-  console.log('[App] 断开SSE连接')
   sseManager.disconnect()
 })
 </script>

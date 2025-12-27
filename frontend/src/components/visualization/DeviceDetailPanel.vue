@@ -63,11 +63,23 @@ const deviceTypeTagType = computed(() => {
 })
 
 const statusLabel = computed(() => {
-  return props.device.status === 'ONLINE' ? '在线' : '离线'
+  const statusMap = {
+    'ONLINE': '在线',
+    'OFFLINE': '离线',
+    'MAINTENANCE': '维护中',
+    'FAULT': '故障'
+  }
+  return statusMap[props.device.status] || props.device.status
 })
 
 const statusTagType = computed(() => {
-  return props.device.status === 'ONLINE' ? 'success' : 'info'
+  const typeMap = {
+    'ONLINE': 'success',
+    'OFFLINE': 'info',
+    'MAINTENANCE': 'warning',
+    'FAULT': 'danger'
+  }
+  return typeMap[props.device.status] || 'info'
 })
 
 const formatDate = (dateStr) => {

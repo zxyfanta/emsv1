@@ -98,3 +98,28 @@ app:
       keep-alive-interval: 60           # 心跳间隔（秒）
       # 自动注册设备的默认公司ID
       default-company-id: ${EMS_DEFAULT_COMPANY_ID:1}
+
+    # Redis配置
+    redis:
+      host: ${EMS_REDIS_HOST:localhost}
+      port: ${EMS_REDIS_PORT:6379}
+      password: ${EMS_REDIS_PASSWORD:ems_redis_pass}  # Docker环境使用密码保护
+      database: 0
+      timeout: 3000ms  # 连接超时时间
+      lettuce:
+        pool:
+          max-active: 8    # 最大连接数
+          max-idle: 8      # 最大空闲连接数
+          min-idle: 0      # 最小空闲连接数
+          max-wait: -1ms   # 最大等待时间
+
+    # 告警配置（所有企业使用相同配置）
+    alert:
+      cpm-rise:
+        rise-percentage: 0.15       # CPM上升15%触发告警
+        min-interval: 300           # 最小检查间隔5分钟（防止频繁告警）
+        min-cpm: 50                 # 最小CPM值（避免基数太小误报）
+      low-battery:
+        voltage-threshold: 3.5      # 电压低于3.5V触发告警
+      offline-timeout:
+        timeout-minutes: 10         # 10分钟无数据视为离线

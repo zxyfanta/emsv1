@@ -122,7 +122,7 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { CSS2DRenderer } from 'three/examples/jsm/renderers/CSS2DRenderer.js'
 import { createRegionOutline, regionOutlineData } from '@/constants/regionOutline'
-import { createAllDeviceModels, animateDevices, handleDeviceClick as handleDevice3DClick, highlightDevice, initCSS2DRenderer } from '@/utils/device3DModels'
+import { createAllDeviceModels, animateDevices, handleDeviceClick as handleDevice3DClick, initCSS2DRenderer } from '@/utils/device3DModels'
 import DeviceDetailPanel from '@/components/visualization/DeviceDetailPanel.vue'
 import LeftPanel from '@/components/visualization/LeftPanel.vue'
 import RightPanel from '@/components/visualization/RightPanel.vue'
@@ -257,11 +257,8 @@ const onCanvasResize = (entries) => {
 // 更新3D设备模型
 const updateDevice3DModels = () => {
   if (!devices3DGroup) {
-    console.warn('[更新3D模型] devices3DGroup 不存在，跳过更新')
     return
   }
-
-  console.log('[更新3D模型] 开始更新，有位置的设备数:', devicesWithPosition.value.length)
 
   // 移除旧的设备模型
   scene.remove(devices3DGroup)
@@ -273,8 +270,6 @@ const updateDevice3DModels = () => {
     animated: true
   })
   scene.add(devices3DGroup)
-
-  console.log('[更新3D模型] 更新完成，3D 场景中的设备数:', devices3DGroup.children.length)
 }
 
 // 动画循环
@@ -308,40 +303,29 @@ const onMouseClick = (event) => {
 
 // 加载企业列表（仅管理员）
 const loadCompanies = async () => {
-  // 调试日志：检查用户角色
-  console.log('[企业选择器调试] 当前用户角色:', userStore.userRole)
-  console.log('[企业选择器调试] isAdmin值:', isAdmin.value)
-  console.log('[企业选择器调试] userInfo:', userStore.userInfo)
-
   if (!isAdmin.value) {
-    console.warn('[企业选择器调试] 非管理员用户，跳过企业列表加载')
     return
   }
 
   try {
-    console.log('[企业选择器调试] 开始加载企业列表...')
     const res = await getCompanyList({ size: 1000 })
-    console.log('[企业选择器调试] 企业列表响应:', res)
 
     if (res.status === 200) {
       companies.value = res.data.content || []
-      console.log('[企业选择器调试] 解析后的企业列表:', companies.value)
 
       // 默认选择第一个企业
       if (companies.value.length > 0 && !selectedCompanyId.value) {
         selectedCompanyId.value = companies.value[0].id
-        console.log('[企业选择器调试] 默认选择企业ID:', selectedCompanyId.value)
       }
     }
   } catch (error) {
-    console.error('[企业选择器调试] 加载企业列表失败:', error)
+    console.error('[加载企业列表] 失败:', error)
   }
 }
 
 // 加载设备数据
 const loadDevices = async () => {
   try {
-    console.log('[加载设备] 开始加载设备数据...')
     // 管理员：根据选择的企业过滤设备
     // 普通用户：加载自己企业的设备
     const params = { size: 1000 }
@@ -352,19 +336,6 @@ const loadDevices = async () => {
     const res = await getAllDevices(params)
     if (res.status === 200) {
       const newDevices = res.data.content || []
-      console.log('[加载设备] API 返回设备数:', newDevices.length)
-
-      // 检查是否有位置变化
-      if (newDevices.length > 0) {
-        const sampleDevice = newDevices[0]
-        console.log('[加载设备] 示例设备:', {
-          id: sampleDevice.id,
-          name: sampleDevice.deviceName,
-          positionX: sampleDevice.positionX,
-          positionY: sampleDevice.positionY
-        })
-      }
-
       devices.value = newDevices
       // 更新3D设备模型
       updateDevice3DModels()
@@ -414,15 +385,12 @@ watch(selectedCompanyId, () => {
 })
 
 onMounted(async () => {
-  console.log('[可视化大屏] onMounted - 开始初始化')
-
   // 先加载企业列表（如果是管理员）
   await loadCompanies()
 
   // 立即加载设备数据，确保每次挂载时都获取最新数据
   // 这样从设备编辑页面返回时，会自动显示更新后的位置
   await loadDevices()
-  console.log('[可视化大屏] 设备数据已加载，设备数量:', devices.value.length)
 
   // 等待 DOM 完全渲染（dv-full-screen-container 需要更多时间初始化）
   await nextTick()
@@ -431,14 +399,12 @@ onMounted(async () => {
   // 3D 场景初始化需要等待容器就绪
   const initSceneWhenReady = () => {
     if (!canvasContainer.value) {
-      console.warn('[initScene] canvasContainer 未就绪，等待中...')
       setTimeout(initSceneWhenReady, 200)
       return
     }
 
     const { clientWidth, clientHeight } = canvasContainer.value
     if (clientWidth === 0 || clientHeight === 0) {
-      console.warn('[initScene] 容器尺寸为 0，等待容器初始化...')
       setTimeout(initSceneWhenReady, 200)
       return
     }

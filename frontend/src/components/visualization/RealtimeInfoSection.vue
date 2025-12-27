@@ -171,8 +171,6 @@ const handleSSEMessage = (eventType, data) => {
     if (latestData.value) {
       visualizationStore.cacheRealtimeData(selectedDevice.value.deviceCode, latestData.value)
     }
-
-    console.log('[RealtimeInfoSection] SSE数据已更新:', latestData.value)
   } catch (e) {
     console.error('[RealtimeInfoSection] 解析SSE数据失败:', e)
   }
@@ -188,7 +186,6 @@ const startSSE = () => {
   // 确保SSE已初始化
   const status = sseManager.getStatus()
   if (!status.connected) {
-    console.warn('[RealtimeInfoSection] SSE未连接，尝试初始化...')
     sseManager.init()
   }
 

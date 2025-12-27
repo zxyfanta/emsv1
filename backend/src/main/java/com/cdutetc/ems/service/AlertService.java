@@ -113,20 +113,23 @@ public class AlertService {
 
     /**
      * 检查辐射数据并触发告警
+     * TODO: 实现CPM上升率检查逻辑
      */
     public void checkRadiationDataAndAlert(String deviceCode, Double cpm, Long deviceId, Long companyId) {
-        // 检查高辐射值
-        if (cpm != null && cpm > HIGH_CPM_THRESHOLD) {
-            createAlert(
-                AlertType.HIGH_CPM,
-                AlertSeverity.CRITICAL,
-                deviceCode,
-                deviceId,
-                companyId,
-                String.format("辐射值超标: 当前值 %.2f CPM，阈值 %d CPM", cpm, (int) HIGH_CPM_THRESHOLD),
-                Map.of("cpm", cpm, "threshold", HIGH_CPM_THRESHOLD)
-            );
-        }
+        // 暂时注释掉旧的HIGH_CPM检查逻辑
+        // 新的CPM上升率检查逻辑将在后续实现，需要配合缓存和配置服务
+
+        // if (cpm != null && cpm > HIGH_CPM_THRESHOLD) {
+        //     createAlert(
+        //         AlertType.HIGH_CPM,
+        //         AlertSeverity.CRITICAL,
+        //         deviceCode,
+        //         deviceId,
+        //         companyId,
+        //         String.format("辐射值超标: 当前值 %.2f CPM，阈值 %d CPM", cpm, (int) HIGH_CPM_THRESHOLD),
+        //         Map.of("cpm", cpm, "threshold", HIGH_CPM_THRESHOLD)
+        //     );
+        // }
     }
 
     /**
@@ -151,18 +154,20 @@ public class AlertService {
      * 检查设备状态并触发告警
      */
     public void checkDeviceStatusAndAlert(Device device) {
-        // 检查设备故障
-        if (DeviceStatus.FAULT.name().equals(device.getStatus())) {
-            createAlert(
-                AlertType.FAULT,
-                AlertSeverity.CRITICAL,
-                device.getDeviceCode(),
-                device.getId(),
-                device.getCompany().getId(),
-                "设备故障: 设备状态异常",
-                Map.of("deviceStatus", device.getStatus())
-            );
-        }
+        // 设备不再发送FAULT状态，已移除此检查
+        // 设备故障告警逻辑已被移除，因为设备本身不传递故障信息
+
+        // if (DeviceStatus.FAULT.name().equals(device.getStatus())) {
+        //     createAlert(
+        //         AlertType.FAULT,
+        //         AlertSeverity.CRITICAL,
+        //         device.getDeviceCode(),
+        //         device.getId(),
+        //         device.getCompany().getId(),
+        //         "设备故障: 设备状态异常",
+        //         Map.of("deviceStatus", device.getStatus())
+        //     );
+        // }
 
         // 检查设备离线（离线超过10分钟触发告警）
         if (DeviceStatus.OFFLINE.name().equals(device.getStatus())) {
