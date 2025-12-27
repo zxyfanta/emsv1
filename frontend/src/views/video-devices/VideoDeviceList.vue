@@ -40,8 +40,8 @@
         <!-- 绑定的监测设备 -->
         <el-table-column label="绑定设备" width="150">
           <template #default="{ row }">
-            <el-tag v-if="row.linkedDevice" type="success" size="small">
-              {{ row.linkedDevice.deviceCode }}
+            <el-tag v-if="row.linkedDeviceName" type="success" size="small">
+              {{ row.linkedDeviceName }}
             </el-tag>
             <el-tag v-else type="info" size="small">未绑定</el-tag>
           </template>
@@ -52,7 +52,7 @@
           <template #default="{ row }">
             <el-button link type="primary" @click="handleEdit(row)">编辑</el-button>
             <el-button link type="success" @click="handleBind(row)">
-              {{ row.linkedDevice ? '重新绑定' : '绑定' }}
+              {{ row.linkedDeviceId ? '重新绑定' : '绑定' }}
             </el-button>
             <el-button link type="danger" @click="handleDelete(row)">删除</el-button>
           </template>

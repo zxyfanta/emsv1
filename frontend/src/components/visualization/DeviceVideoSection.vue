@@ -3,11 +3,11 @@
     <div class="section-header">
       <h3 class="section-title">
         <el-icon><VideoCamera /></el-icon>
-        设备视频
+        设备视频 ({{ videoDevices.length }})
       </h3>
       <el-input
         v-model="searchQuery"
-        placeholder="搜索设备名称/编码"
+        placeholder="搜索视频设备名称/编码"
         prefix-icon="Search"
         size="small"
         clearable
@@ -16,14 +16,24 @@
     </div>
 
     <el-scrollbar class="video-cards-container">
-      <div v-if="filteredDevices.length === 0" class="empty-state">
-        <el-empty description="暂无设备" />
+      <!-- 加载状态 -->
+      <div v-if="loading" class="loading-state">
+        <el-icon class="is-loading" :size="32"><Loading /></el-icon>
+        <p>加载视频设备中...</p>
       </div>
+
+      <!-- 空状态 -->
+      <div v-else-if="filteredDevices.length === 0" class="empty-state">
+        <el-empty :description="searchQuery ? '未找到匹配的视频设备' : '暂无视频设备'" />
+      </div>
+
+      <!-- 视频卡片网格 -->
       <div v-else class="video-cards-grid">
         <VideoCard
-          v-for="device in filteredDevices"
-          :key="device.id"
-          :device="device"
+          v-for="videoDevice in filteredDevices"
+          :key="videoDevice.id"
+          :video-device="videoDevice"
+          :linked-device="getLinkedDevice(videoDevice)"
           @click="handleVideoClick"
         />
       </div>
@@ -35,14 +45,16 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { VideoCamera } from '@element-plus/icons-vue'
+import { ref, computed, onMounted, watch } from 'vue'
+import { VideoCamera, Loading } from '@element-plus/icons-vue'
 import VideoCard from './VideoCard.vue'
 import VideoPlayerDialog from './VideoPlayerDialog.vue'
 import { useVisualizationStore } from '@/store/visualization'
+import { getAllVideoDevices } from '@/api/video'
+import { ElMessage } from 'element-plus'
 
 const props = defineProps({
-  devices: {
+  monitorDevices: {
     type: Array,
     default: () => []
   }
@@ -50,23 +62,71 @@ const props = defineProps({
 
 const visualizationStore = useVisualizationStore()
 const searchQuery = ref('')
+const loading = ref(false)
+const videoDevices = ref([])
 
-// 过滤设备（按名称或编码搜索）
+// 创建监测设备的ID映射，方便查找
+const monitorDeviceMap = computed(() => {
+  const map = new Map()
+  props.monitorDevices.forEach(device => {
+    map.set(device.id, device)
+  })
+  return map
+})
+
+// 根据linkedDeviceId获取绑定的监测设备信息
+const getLinkedDevice = (videoDevice) => {
+  if (!videoDevice.linkedDeviceId) {
+    return null
+  }
+  return monitorDeviceMap.value.get(videoDevice.linkedDeviceId) || null
+}
+
+// 加载视频设备列表
+const loadVideoDevices = async () => {
+  loading.value = true
+  try {
+    const res = await getAllVideoDevices()
+    if (res.status === 200) {
+      videoDevices.value = res.data || []
+    }
+  } catch (error) {
+    console.error('[加载视频设备] 失败:', error)
+    ElMessage.error('加载视频设备失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+// 过滤视频设备（按名称或编码搜索）
 const filteredDevices = computed(() => {
   if (!searchQuery.value) {
-    return props.devices
+    return videoDevices.value
   }
   const query = searchQuery.value.toLowerCase()
-  return props.devices.filter(device =>
-    device.deviceName?.toLowerCase().includes(query) ||
-    device.deviceCode?.toLowerCase().includes(query)
+  return videoDevices.filter(vd =>
+    vd.deviceName?.toLowerCase().includes(query) ||
+    vd.deviceCode?.toLowerCase().includes(query)
   )
 })
 
 // 点击设备卡片打开视频
-const handleVideoClick = (device) => {
-  visualizationStore.openVideoDialog(device)
+const handleVideoClick = (videoDevice) => {
+  visualizationStore.openVideoDialog({
+    ...videoDevice,
+    linkedDevice: getLinkedDevice(videoDevice)
+  })
 }
+
+// 组件挂载时加载视频设备
+onMounted(() => {
+  loadVideoDevices()
+})
+
+// 监听监测设备列表变化，重新加载视频设备
+watch(() => props.monitorDevices, () => {
+  loadVideoDevices()
+}, { deep: true })
 </script>
 
 <style scoped>
@@ -98,7 +158,7 @@ const handleVideoClick = (device) => {
 }
 
 .search-input {
-  width: 160px;
+  width: 200px;
 }
 
 .search-input :deep(.el-input__wrapper) {
@@ -124,6 +184,20 @@ const handleVideoClick = (device) => {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 10px;
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.loading-state p {
+  margin-top: 12px;
+  font-size: 14px;
 }
 
 .empty-state {

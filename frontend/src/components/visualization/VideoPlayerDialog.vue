@@ -1,7 +1,7 @@
 <template>
   <el-dialog
     v-model="dialogVisible"
-    :title="`设备视频 - ${device?.deviceName || ''}`"
+    :title="`视频设备 - ${device?.deviceName || ''}`"
     width="800px"
     :close-on-click-modal="false"
     @close="handleClose"
@@ -16,7 +16,7 @@
           </el-icon>
           <p class="placeholder-text">视频播放器区域</p>
           <p class="placeholder-hint">
-            设备：{{ device?.deviceName }} ({{ device?.deviceCode }})
+            视频设备：{{ device?.deviceName }} ({{ device?.deviceCode }})
           </p>
           <el-alert
             type="info"
@@ -28,22 +28,46 @@
         </div>
       </div>
 
-      <!-- 设备信息 -->
+      <!-- 视频设备信息 -->
       <div v-if="device" class="device-details">
         <el-descriptions :column="2" border>
-          <el-descriptions-item label="设备名称">
+          <el-descriptions-item label="视频设备名称">
             {{ device.deviceName }}
           </el-descriptions-item>
-          <el-descriptions-item label="设备编码">
+          <el-descriptions-item label="视频设备编码">
             {{ device.deviceCode }}
           </el-descriptions-item>
-          <el-descriptions-item label="设备类型">
-            <el-tag :type="device.deviceType === 'RADIATION_MONITOR' ? 'danger' : 'success'" size="small">
-              {{ device.deviceType === 'RADIATION_MONITOR' ? '辐射监测设备' : '环境监测设备' }}
+          <el-descriptions-item label="视频流类型">
+            <el-tag :type="getStreamTypeTag(device.streamType)" size="small">
+              {{ device.streamType || 'RTSP' }}
             </el-tag>
           </el-descriptions-item>
-          <el-descriptions-item label="安装位置" :span="2">
-            {{ device.location || '未设置' }}
+          <el-descriptions-item label="分辨率">
+            {{ device.resolution || '-' }}
+          </el-descriptions-item>
+          <el-descriptions-item label="帧率">
+            {{ device.fps ? device.fps + ' fps' : '-' }}
+          </el-descriptions-item>
+          <el-descriptions-item label="状态">
+            <el-tag :type="device.status === 'ONLINE' ? 'success' : 'info'" size="small">
+              {{ device.status || 'OFFLINE' }}
+            </el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="绑定监测设备" :span="2">
+            <span v-if="device.linkedDevice">
+              <el-tag :type="getDeviceTypeTag(device.linkedDevice.deviceType)" size="small">
+                {{ device.linkedDevice.deviceType === 'RADIATION_MONITOR' ? '辐射' : '环境' }}
+              </el-tag>
+              {{ device.linkedDevice.deviceName }} ({{ device.linkedDevice.deviceCode }})
+            </span>
+            <span v-else style="color: rgba(255, 255, 255, 0.5);">
+              未绑定
+            </span>
+          </el-descriptions-item>
+          <el-descriptions-item label="视频流URL" :span="2">
+            <span style="word-break: break-all; font-size: 12px; color: rgba(255, 255, 255, 0.7);">
+              {{ device.streamUrl || '-' }}
+            </span>
           </el-descriptions-item>
         </el-descriptions>
       </div>
@@ -72,6 +96,23 @@ const dialogVisible = computed({
 })
 
 const device = computed(() => visualizationStore.videoDevice)
+
+// 获取流类型标签颜色
+const getStreamTypeTag = (streamType) => {
+  const typeMap = {
+    'RTSP': 'danger',
+    'RTMP': 'warning',
+    'HLS': 'success',
+    'FLV': 'info',
+    'WEBRTC': 'primary'
+  }
+  return typeMap[streamType] || 'info'
+}
+
+// 获取设备类型标签颜色
+const getDeviceTypeTag = (deviceType) => {
+  return deviceType === 'RADIATION_MONITOR' ? 'danger' : 'success'
+}
 
 const handleClose = () => {
   visualizationStore.closeVideoDialog()

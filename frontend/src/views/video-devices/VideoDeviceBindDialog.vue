@@ -11,8 +11,8 @@
           {{ videoDevice.deviceName }} ({{ videoDevice.deviceCode }})
         </el-descriptions-item>
         <el-descriptions-item label="当前绑定">
-          <el-tag v-if="videoDevice.linkedDevice" type="success">
-            {{ videoDevice.linkedDevice.deviceCode }}
+          <el-tag v-if="videoDevice.linkedDeviceName" type="success">
+            {{ videoDevice.linkedDeviceName }}
           </el-tag>
           <el-tag v-else type="info">未绑定</el-tag>
         </el-descriptions-item>
@@ -20,7 +20,7 @@
 
       <el-divider />
 
-      <el-form v-if="!videoDevice.linkedDevice" label-width="100px">
+      <el-form v-if="!videoDevice.linkedDeviceId" label-width="100px">
         <el-form-item label="选择设备">
           <el-select
             v-model="selectedDeviceId"
@@ -42,7 +42,7 @@
       </el-form>
 
       <el-alert
-        v-if="videoDevice.linkedDevice"
+        v-if="videoDevice.linkedDeviceId"
         title="设备已绑定，如需重新绑定请先解绑当前设备"
         type="info"
         :closable="false"
@@ -52,7 +52,7 @@
     <template #footer>
       <el-button @click="handleCancel">取消</el-button>
       <el-button
-        v-if="videoDevice?.linkedDevice"
+        v-if="videoDevice?.linkedDeviceId"
         type="danger"
         @click="handleUnbind"
         :loading="submitting"
@@ -141,7 +141,7 @@ const handleCancel = () => {
 }
 
 watch(() => props.modelValue, (newVal) => {
-  if (newVal && !props.videoDevice?.linkedDevice) {
+  if (newVal && !props.videoDevice?.linkedDeviceId) {
     loadAvailableDevices()
   }
   if (!newVal) {

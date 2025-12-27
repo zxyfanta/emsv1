@@ -14,6 +14,7 @@ public class VideoDeviceCreateRequest {
     @Size(max = 50, message = "设备编码长度不能超过50")
     private String deviceCode;
 
+    @NotBlank(message = "设备名称不能为空")
     @Size(max = 100, message = "设备名称长度不能超过100")
     private String deviceName;
 
@@ -21,7 +22,6 @@ public class VideoDeviceCreateRequest {
     @Size(max = 500, message = "URL长度不能超过500")
     private String streamUrl;
 
-    @NotBlank(message = "流类型不能为空")
     private String streamType;  // RTSP, RTMP, HLS, FLV, WEBRTC
 
     private String snapshotUrl;

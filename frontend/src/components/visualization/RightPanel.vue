@@ -1,7 +1,7 @@
 <template>
   <div class="right-panel-content">
-    <!-- 1. 设备视频栏 -->
-    <DeviceVideoSection :devices="onlineDevices" class="video-section" />
+    <!-- 1. 设备视频栏 - 直接传递设备列表，由VideoDeviceSection内部加载视频设备 -->
+    <DeviceVideoSection :monitor-devices="devices" class="video-section" />
 
     <!-- 2. 实时信息栏 -->
     <RealtimeInfoSection :devices="onlineDevices" class="realtime-section" />
@@ -24,7 +24,7 @@ const props = defineProps({
   }
 })
 
-// 获取在线设备用于视频和实时信息展示
+// 获取在线设备用于实时信息展示
 const onlineDevices = computed(() => {
   return props.devices.filter(d => d.status === 'ONLINE')
 })

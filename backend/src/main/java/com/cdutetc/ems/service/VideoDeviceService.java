@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * 视频设备服务
@@ -45,7 +46,7 @@ public class VideoDeviceService {
         videoDevice.setDeviceCode(request.getDeviceCode());
         videoDevice.setDeviceName(request.getDeviceName());
         videoDevice.setStreamUrl(request.getStreamUrl());
-        videoDevice.setStreamType(request.getStreamType());
+        videoDevice.setStreamType(request.getStreamType() != null ? request.getStreamType() : "RTSP");
         videoDevice.setSnapshotUrl(request.getSnapshotUrl());
         videoDevice.setUsername(request.getUsername());
         videoDevice.setPassword(request.getPassword());
@@ -112,6 +113,7 @@ public class VideoDeviceService {
 
     /**
      * 绑定视频设备到监测设备
+     * 一个监测设备只能绑定一个视频设备（一对一关系）
      */
     @Transactional
     public VideoDevice bindToDevice(Long videoDeviceId, Long monitorDeviceId, Long companyId) {
@@ -130,6 +132,18 @@ public class VideoDeviceService {
         // 验证监测设备属于同一企业
         if (!monitorDevice.getCompany().getId().equals(companyId)) {
             throw new IllegalArgumentException("监测设备不属于同一企业");
+        }
+
+        // 检查该监测设备是否已被其他视频设备绑定
+        Optional<VideoDevice> existingBinding = videoDeviceRepository.findByLinkedDeviceId(monitorDeviceId);
+        if (existingBinding.isPresent() && !existingBinding.get().getId().equals(videoDeviceId)) {
+            VideoDevice existing = existingBinding.get();
+            throw new IllegalStateException(
+                String.format("该监测设备已绑定视频设备[%s]，请先解绑。当前操作: 绑定[%s]到[%s]",
+                    existing.getDeviceCode(),
+                    videoDevice.getDeviceCode(),
+                    monitorDevice.getDeviceCode())
+            );
         }
 
         videoDevice.setLinkedDevice(monitorDevice);

@@ -21,6 +21,7 @@ public class VideoDeviceResponse {
     private String status;
     private Long linkedDeviceId;
     private String linkedDeviceName;
+    private String companyName;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -47,6 +48,11 @@ public class VideoDeviceResponse {
         if (videoDevice.getLinkedDevice() != null) {
             response.setLinkedDeviceId(videoDevice.getLinkedDevice().getId());
             response.setLinkedDeviceName(videoDevice.getLinkedDevice().getDeviceName());
+        }
+
+        // 企业名称
+        if (videoDevice.getCompany() != null) {
+            response.setCompanyName(videoDevice.getCompany().getCompanyName());
         }
 
         return response;
