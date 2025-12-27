@@ -1,5 +1,6 @@
 package com.cdutetc.ems.controller;
 
+import com.cdutetc.ems.dto.request.ChangePasswordRequest;
 import com.cdutetc.ems.dto.request.UserCreateRequest;
 import com.cdutetc.ems.dto.response.UserResponse;
 import com.cdutetc.ems.entity.User;
@@ -351,4 +352,143 @@ public class UserController {
                     .body(ApiResponse.error("更新用户状态失败"));
         }
     }
+
+    /**
+     * 修改当前用户密码
+     */
+    @PostMapping("/change-password")
+    @Operation(summary = "修改密码", description = "修改当前登录用户的密码")
+    public ResponseEntity<ApiResponse<Void>> changePassword(
+            @Valid @RequestBody ChangePasswordRequest request,
+            HttpServletRequest httpRequest) {
+        try {
+            String token = extractTokenFromRequest(httpRequest);
+            if (token == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(ApiResponse.unauthorized("未授权"));
+            }
+
+            Long userId = jwtUtil.getUserIdFromToken(token);
+            User user = userService.findById(userId);
+
+            // 验证当前密码
+            if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
+                return ResponseEntity.badRequest()
+                        .body(ApiResponse.badRequest("当前密码不正确"));
+            }
+
+            // 检查新密码是否与当前密码相同
+            if (passwordEncoder.matches(request.getNewPassword(), user.getPassword())) {
+                return ResponseEntity.badRequest()
+                        .body(ApiResponse.badRequest("新密码不能与当前密码相同"));
+            }
+
+            // 更新密码
+            user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+            userService.updateUser(userId, user);
+
+            log.info("Password changed successfully for user: {}", user.getUsername());
+            return ResponseEntity.ok(ApiResponse.success("密码修改成功"));
+
+        } catch (RuntimeException e) {
+            if (e.getMessage().contains("不存在")) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(ApiResponse.notFound("用户不存在"));
+            }
+            throw e;
+        } catch (Exception e) {
+            log.error("Error changing password: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("修改密码失败"));
+        }
+    }
+
+    /**
+     * 更新当前用户个人信息
+     */
+    @PutMapping("/current")
+    @Operation(summary = "更新个人信息", description = "更新当前登录用户的个人信息")
+    public ResponseEntity<ApiResponse<UserResponse>> updateCurrentProfile(
+            @RequestBody UserCreateRequest request,
+            HttpServletRequest httpRequest) {
+        try {
+            String token = extractTokenFromRequest(httpRequest);
+            if (token == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(ApiResponse.unauthorized("未授权"));
+            }
+
+            Long userId = jwtUtil.getUserIdFromToken(token);
+            User existingUser = userService.findById(userId);
+
+            // 检查邮箱是否被其他用户使用
+            if (request.getEmail() != null &&
+                !request.getEmail().equals(existingUser.getEmail()) &&
+                userService.existsByEmail(request.getEmail())) {
+                return ResponseEntity.badRequest()
+                        .body(ApiResponse.badRequest("邮箱已被其他用户使用"));
+            }
+
+            // 更新用户基本信息（不允许修改用户名）
+            if (request.getFullName() != null) {
+                existingUser.setFullName(request.getFullName());
+            }
+            if (request.getEmail() != null) {
+                existingUser.setEmail(request.getEmail());
+            }
+
+            User updatedUser = userService.updateUser(userId, existingUser);
+            UserResponse response = UserResponse.fromUser(updatedUser);
+
+            log.info("Profile updated successfully for user: {}", updatedUser.getUsername());
+            return ResponseEntity.ok(ApiResponse.updated(response));
+
+        } catch (Exception e) {
+            log.error("Error updating profile: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("更新个人信息失败"));
+        }
+    }
+
+    /**
+     * 管理员重置用户密码
+     */
+    @PutMapping("/{id}/password")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "重置用户密码", description = "管理员重置指定用户的密码")
+    public ResponseEntity<ApiResponse<Void>> resetUserPassword(
+            @Parameter(description = "用户ID") @PathVariable Long id,
+            @RequestBody PasswordResetRequest request) {
+        try {
+            User user = userService.findById(id);
+
+            // 重置密码
+            user.setPassword(passwordEncoder.encode(request.getPassword()));
+            userService.updateUser(id, user);
+
+            log.info("Password reset successfully for user: {} by admin", user.getUsername());
+            return ResponseEntity.ok(ApiResponse.success("密码重置成功"));
+
+        } catch (RuntimeException e) {
+            if (e.getMessage().contains("不存在")) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(ApiResponse.notFound("用户不存在"));
+            }
+            throw e;
+        } catch (Exception e) {
+            log.error("Error resetting password for user {}: {}", id, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("重置密码失败"));
+        }
+    }
+}
+
+/**
+ * 密码重置请求DTO
+ */
+@lombok.Data
+class PasswordResetRequest {
+    @jakarta.validation.constraints.NotBlank(message = "新密码不能为空")
+    @jakarta.validation.constraints.Size(min = 6, max = 100, message = "密码长度必须在6-100位之间")
+    private String password;
 }

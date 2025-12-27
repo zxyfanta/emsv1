@@ -51,3 +51,29 @@ export const resetUserPassword = (id, newPassword) => {
     data: { password: newPassword }
   })
 }
+
+// 修改当前用户密码
+export const changePassword = (data) => {
+  return request({
+    url: '/users/change-password',
+    method: 'post',
+    data
+  })
+}
+
+// 获取当前用户信息
+export const getCurrentUser = () => {
+  return request({
+    url: '/users/current',
+    method: 'get'
+  })
+}
+
+// 更新当前用户个人信息
+export const updateCurrentProfile = (data) => {
+  return request({
+    url: '/users/current',
+    method: 'put',
+    data
+  })
+}

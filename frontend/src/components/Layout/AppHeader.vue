@@ -52,7 +52,7 @@ const handleCommand = async (command) => {
       router.push('/login')
     })
   } else if (command === 'profile') {
-    // TODO: 显示个人信息对话框
+    router.push('/settings')
   }
 }
 </script>
