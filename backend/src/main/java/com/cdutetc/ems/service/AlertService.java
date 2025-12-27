@@ -113,14 +113,22 @@ public class AlertService {
 
     /**
      * 检查辐射数据并触发告警（CPM上升率检查）
+     *
+     * @param deviceCode 设备编码
+     * @param cpm 当前CPM值
+     * @param deviceType 设备类型（RADIATION 或 ENVIRONMENT）
+     * @param deviceId 设备ID
+     * @param companyId 企业ID
      */
-    public void checkRadiationDataAndAlert(String deviceCode, Double cpm, Long deviceId, Long companyId) {
+    public void checkRadiationDataAndAlert(String deviceCode, Double cpm, String deviceType,
+                                            Long deviceId, Long companyId) {
         if (cpm == null) {
             return;
         }
 
-        // 1. 获取CPM上升率配置
+        // 1. 获取CPM上升率配置，根据设备类型选择合适的阈值
         AlertProperties.CpmRise config = alertConfigService.getCpmRiseConfig();
+        double risePercentageThreshold = config.getRisePercentageForDevice(deviceType);
 
         // 2. 从缓存获取上次CPM值
         Double lastCpm = deviceStatusCacheService.getLastCpm(deviceCode);
@@ -142,9 +150,9 @@ public class AlertService {
         double riseRate = (cpm - lastCpm) / lastCpm;
 
         // 6. 检查上升率是否超过阈值
-        if (riseRate <= config.getRisePercentage()) {
-            log.debug("设备{}CPM上升率{}%未超过阈值{}%",
-                      deviceCode, riseRate * 100, config.getRisePercentage() * 100);
+        if (riseRate <= risePercentageThreshold) {
+            log.debug("设备{}({}) CPM上升率{}%未超过阈值{}%",
+                      deviceCode, deviceType, riseRate * 100, risePercentageThreshold * 100);
             return;
         }
 
@@ -164,7 +172,7 @@ public class AlertService {
         // 8. 触发CPM上升率告警
         String message = String.format(
             "辐射值突增: 从%.2f CPM上升至%.2f CPM（上升%.1f%%），超过阈值%.0f%%",
-            lastCpm, cpm, riseRate * 100, config.getRisePercentage() * 100
+            lastCpm, cpm, riseRate * 100, risePercentageThreshold * 100
         );
 
         createAlert(
@@ -178,29 +186,47 @@ public class AlertService {
                 "lastCpm", lastCpm,
                 "currentCpm", cpm,
                 "riseRate", riseRate,
-                "threshold", config.getRisePercentage()
+                "threshold", risePercentageThreshold,
+                "deviceType", deviceType
             )
         );
 
         // 9. 更新告警去重缓存
         deviceStatusCacheService.updateLastCpmRiseAlertTime(deviceCode, LocalDateTime.now());
 
-        log.warn("⚠️ CPM上升率告警触发: deviceCode={}, riseRate={}%, lastCpm={}, currentCpm={}",
-                 deviceCode, String.format("%.1f", riseRate * 100),
+        log.warn("⚠️ CPM上升率告警触发: deviceCode={}, deviceType={}, riseRate={}%, lastCpm={}, currentCpm={}",
+                 deviceCode, deviceType, String.format("%.1f", riseRate * 100),
                  String.format("%.2f", lastCpm), String.format("%.2f", cpm));
     }
 
     /**
-     * 检查环境数据并触发告警（低电压检查）
+     * 检查辐射数据并触发告警（CPM上升率检查）- 兼容旧方法
+     * @deprecated 使用 checkRadiationDataAndAlert(deviceCode, cpm, deviceType, deviceId, companyId) 代替
      */
-    public void checkEnvironmentDataAndAlert(String deviceCode, Double battery, Long deviceId, Long companyId) {
+    @Deprecated
+    public void checkRadiationDataAndAlert(String deviceCode, Double cpm, Long deviceId, Long companyId) {
+        // 默认使用辐射设备类型
+        checkRadiationDataAndAlert(deviceCode, cpm, "RADIATION", deviceId, companyId);
+    }
+
+    /**
+     * 检查环境数据并触发告警（低电压检查）
+     *
+     * @param deviceCode 设备编码
+     * @param battery 当前电压值（伏V）
+     * @param deviceType 设备类型（RADIATION 或 ENVIRONMENT）
+     * @param deviceId 设备ID
+     * @param companyId 企业ID
+     */
+    public void checkEnvironmentDataAndAlert(String deviceCode, Double battery, String deviceType,
+                                              Long deviceId, Long companyId) {
         if (battery == null) {
             return;
         }
 
-        // 从配置服务读取低电压阈值
+        // 从配置服务读取低电压阈值，根据设备类型选择合适的阈值
         AlertProperties.LowBattery config = alertConfigService.getLowBatteryConfig();
-        double voltageThreshold = config.getVoltageThreshold();
+        double voltageThreshold = config.getThresholdForDevice(deviceType);
 
         // 检查低电量
         if (battery < voltageThreshold) {
@@ -211,12 +237,22 @@ public class AlertService {
                 deviceId,
                 companyId,
                 String.format("电量不足: 当前电压%.2f V，低于阈值%.1f V", battery, voltageThreshold),
-                Map.of("battery", battery, "threshold", voltageThreshold)
+                Map.of("battery", battery, "threshold", voltageThreshold, "deviceType", deviceType)
             );
 
-            log.warn("⚠️ 低电压告警触发: deviceCode={}, battery={}V, threshold={}V",
-                     deviceCode, String.format("%.2f", battery), voltageThreshold);
+            log.warn("⚠️ 低电压告警触发: deviceCode={}, deviceType={}, battery={}V, threshold={}V",
+                     deviceCode, deviceType, String.format("%.2f", battery), voltageThreshold);
         }
+    }
+
+    /**
+     * 检查环境数据并触发告警（低电压检查）- 兼容旧方法
+     * @deprecated 使用 checkEnvironmentDataAndAlert(deviceCode, battery, deviceType, deviceId, companyId) 代替
+     */
+    @Deprecated
+    public void checkEnvironmentDataAndAlert(String deviceCode, Double battery, Long deviceId, Long companyId) {
+        // 默认使用辐射设备阈值
+        checkEnvironmentDataAndAlert(deviceCode, battery, "RADIATION", deviceId, companyId);
     }
 
     /**

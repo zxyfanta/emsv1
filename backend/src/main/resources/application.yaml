@@ -99,6 +99,12 @@ app:
       # 自动注册设备的默认公司ID
       default-company-id: ${EMS_DEFAULT_COMPANY_ID:1}
 
+      # CPM转换系数配置
+      cpm:
+        enabled: true                   # 是否启用CPM转换
+        radiation-conversion-factor: ${EMS_CPM_RADIATION_FACTOR:10.0}    # 辐射设备CPM转换系数（原始值 ÷ 10 = 标准CPM）
+        environment-conversion-factor: ${EMS_CPM_ENVIRONMENT_FACTOR:634.0}  # 环境设备CPM转换系数（原始值 ÷ 634 = 标准CPM）
+
     # Redis配置
     redis:
       host: ${EMS_REDIS_HOST:localhost}
@@ -116,10 +122,14 @@ app:
     # 告警配置（所有企业使用相同配置）
     alert:
       cpm-rise:
-        rise-percentage: 0.15       # CPM上升15%触发告警
+        # CPM上升率配置（按设备类型分别配置）
+        radiation-rise-percentage: ${EMS_ALERT_CPM_RADIATION_RISE:0.15}    # 辐射设备CPM上升15%触发告警
+        environment-rise-percentage: ${EMS_ALERT_CPM_ENVIRONMENT_RISE:0.15}  # 环境设备CPM上升15%触发告警
         min-interval: 300           # 最小检查间隔5分钟（防止频繁告警）
         min-cpm: 50                 # 最小CPM值（避免基数太小误报）
       low-battery:
-        voltage-threshold: 3.5      # 电压低于3.5V触发告警
+        # 电压阈值配置（单位：伏V）
+        radiation-threshold: ${EMS_ALERT_RADIATION_VOLTAGE:3.7}      # 辐射设备电压阈值：3.7V
+        environment-threshold: ${EMS_ALERT_ENVIRONMENT_VOLTAGE:11.1}   # 环境设备电压阈值：3.7 * 3 = 11.1V
       offline-timeout:
         timeout-minutes: 10         # 10分钟无数据视为离线

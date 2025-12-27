@@ -1,5 +1,6 @@
 package com.cdutetc.ems.controller;
 
+import com.cdutetc.ems.config.CpmConversionProperties;
 import com.cdutetc.ems.util.ApiResponse;
 import com.cdutetc.ems.dto.event.DeviceDataEvent;
 import com.cdutetc.ems.dto.request.RadiationDataReceiveRequest;
@@ -38,6 +39,7 @@ public class DeviceDataReceiverController {
     private final RadiationDeviceDataService radiationDeviceDataService;
     private final EnvironmentDeviceDataService environmentDeviceDataService;
     private final SseEmitterService sseEmitterService;
+    private final CpmConversionProperties cpmConversionProperties;
 
     /**
      * 接收辐射设备数据
@@ -69,8 +71,28 @@ public class DeviceDataReceiverController {
             data.setRawData(request.getRawData());
             data.setSrc(request.getSrc());
             data.setMsgtype(request.getMsgtype());
-            data.setCpm(request.getCpm());
-            data.setBatvolt(request.getBatvolt());
+
+            // 应用CPM转换系数
+            Double rawCpm = request.getCpm();
+            if (rawCpm != null) {
+                double convertedCpm = cpmConversionProperties.isEnabled()
+                    ? rawCpm / cpmConversionProperties.getRadiationConversionFactor()
+                    : rawCpm;
+                data.setCpm(convertedCpm);
+                if (cpmConversionProperties.isEnabled()) {
+                    log.debug("🔄 REST API辐射设备CPM转换: 设备={}, 原始值={}, 转换系数={}, 转换后值={}",
+                        request.getDeviceCode(), rawCpm,
+                        cpmConversionProperties.getRadiationConversionFactor(), convertedCpm);
+                }
+            }
+
+            // 辐射设备发送的是毫伏mV，需要转换为伏V存储
+            Double rawBatvolt = request.getBatvolt();
+            if (rawBatvolt != null) {
+                data.setBatvolt(rawBatvolt / 1000.0); // mV转V：原始值(mV) ÷ 1000 = 电压(V)
+                log.debug("🔄 REST API辐射设备电压转换: 设备={}, 原始值={}mV, 转换后值={}V",
+                    request.getDeviceCode(), rawBatvolt, data.getBatvolt());
+            }
             data.setTime(request.getTime());
             data.setRecordTime(LocalDateTime.now());
             data.setDataTrigger(request.getTrigger());
@@ -152,7 +174,21 @@ public class DeviceDataReceiverController {
             data.setDeviceCode(request.getDeviceCode());
             data.setRawData(request.getRawData());
             data.setSrc(request.getSrc());
-            data.setCpm(request.getCpm());
+
+            // 应用CPM转换系数
+            Double rawCpm = request.getCpm();
+            if (rawCpm != null) {
+                double convertedCpm = cpmConversionProperties.isEnabled()
+                    ? rawCpm / cpmConversionProperties.getEnvironmentConversionFactor()
+                    : rawCpm;
+                data.setCpm(convertedCpm);
+                if (cpmConversionProperties.isEnabled()) {
+                    log.debug("🔄 REST API环境设备CPM转换: 设备={}, 原始值={}, 转换系数={}, 转换后值={}",
+                        request.getDeviceCode(), rawCpm,
+                        cpmConversionProperties.getEnvironmentConversionFactor(), convertedCpm);
+                }
+            }
+
             data.setTemperature(request.getTemperature());
             data.setWetness(request.getWetness());
             data.setWindspeed(request.getWindspeed());

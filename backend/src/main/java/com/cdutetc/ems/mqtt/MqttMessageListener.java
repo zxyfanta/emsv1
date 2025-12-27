@@ -1,5 +1,6 @@
 package com.cdutetc.ems.mqtt;
 
+import com.cdutetc.ems.config.CpmConversionProperties;
 import com.cdutetc.ems.dto.event.DeviceDataEvent;
 import com.cdutetc.ems.dto.mqtt.MqttDeviceDataMessage;
 import com.cdutetc.ems.entity.Device;
@@ -41,6 +42,7 @@ public class MqttMessageListener implements MqttCallback {
     private final AlertService alertService;
     private final DeviceStatusCacheService deviceStatusCacheService;
     private final ObjectMapper objectMapper;
+    private final CpmConversionProperties cpmConversionProperties;
 
     @Override
     public void connectionLost(Throwable cause) {
@@ -183,8 +185,25 @@ public class MqttMessageListener implements MqttCallback {
                 // 使用JsonParserUtil解析基础字段
                 JsonParserUtil.parseInt(rootNode, "src").ifPresent(data::setSrc);
                 JsonParserUtil.parseInt(rootNode, "msgtype").ifPresent(data::setMsgtype);
-                JsonParserUtil.parseDouble(rootNode, "CPM").ifPresent(data::setCpm);
-                JsonParserUtil.parseDouble(rootNode, "Batvolt").ifPresent(data::setBatvolt);
+
+                // 解析CPM并应用转换系数
+                JsonParserUtil.parseDouble(rootNode, "CPM").ifPresent(rawCpm -> {
+                    double convertedCpm = cpmConversionProperties.isEnabled()
+                        ? rawCpm / cpmConversionProperties.getRadiationConversionFactor()
+                        : rawCpm;
+                    data.setCpm(convertedCpm);
+                    if (cpmConversionProperties.isEnabled()) {
+                        log.debug("🔄 辐射设备CPM转换: 原始值={}, 转换系数={}, 转换后值={}",
+                            rawCpm, cpmConversionProperties.getRadiationConversionFactor(), convertedCpm);
+                    }
+                });
+
+                // 解析电池电压（辐射设备发送的是毫伏mV，需要转换为伏V存储）
+                JsonParserUtil.parseDouble(rootNode, "Batvolt").ifPresent(rawBatvolt -> {
+                    data.setBatvolt(rawBatvolt / 1000.0); // mV转V：原始值(mV) ÷ 1000 = 电压(V)
+                    log.debug("🔄 辐射设备电压转换: 原始值={}mV, 转换后值={}V",
+                        rawBatvolt, data.getBatvolt());
+                });
                 JsonParserUtil.parseString(rootNode, "time").ifPresent(data::setTime);
                 JsonParserUtil.parseInt(rootNode, "trigger").ifPresent(data::setDataTrigger);
                 JsonParserUtil.parseInt(rootNode, "multi").ifPresent(data::setMulti);
@@ -221,7 +240,7 @@ public class MqttMessageListener implements MqttCallback {
                 deviceStatusCacheService.updateLastCpm(device.getDeviceCode(), savedData.getCpm());
             }
             if (savedData.getBatvolt() != null) {
-                deviceStatusCacheService.updateLastBattery(device.getDeviceCode(), savedData.getBatvolt() / 1000.0); // 转换为伏特
+                deviceStatusCacheService.updateLastBattery(device.getDeviceCode(), savedData.getBatvolt());
             }
 
             // SSE推送实时数据
@@ -244,12 +263,25 @@ public class MqttMessageListener implements MqttCallback {
 
             // 检查告警条件
             try {
+                // CPM上升率告警（辐射设备）
                 alertService.checkRadiationDataAndAlert(
                     device.getDeviceCode(),
                     savedData.getCpm(),
+                    "RADIATION",  // 辐射设备类型
                     device.getId(),
                     device.getCompany().getId()
                 );
+
+                // 电压告警（辐射设备）
+                if (savedData.getBatvolt() != null) {
+                    alertService.checkEnvironmentDataAndAlert(
+                        device.getDeviceCode(),
+                        savedData.getBatvolt(),
+                        "RADIATION",  // 辐射设备类型
+                        device.getId(),
+                        device.getCompany().getId()
+                    );
+                }
             } catch (Exception e) {
                 log.warn("⚠️ 辐射数据告警检查失败: {}", e.getMessage());
             }
@@ -279,7 +311,19 @@ public class MqttMessageListener implements MqttCallback {
 
                 // 使用JsonParserUtil解析基础字段
                 JsonParserUtil.parseInt(rootNode, "src").ifPresent(data::setSrc);
-                JsonParserUtil.parseDouble(rootNode, "CPM").ifPresent(data::setCpm);
+
+                // 解析CPM并应用转换系数
+                JsonParserUtil.parseDouble(rootNode, "CPM").ifPresent(rawCpm -> {
+                    double convertedCpm = cpmConversionProperties.isEnabled()
+                        ? rawCpm / cpmConversionProperties.getEnvironmentConversionFactor()
+                        : rawCpm;
+                    data.setCpm(convertedCpm);
+                    if (cpmConversionProperties.isEnabled()) {
+                        log.debug("🔄 环境设备CPM转换: 原始值={}, 转换系数={}, 转换后值={}",
+                            rawCpm, cpmConversionProperties.getEnvironmentConversionFactor(), convertedCpm);
+                    }
+                });
+
                 JsonParserUtil.parseDouble(rootNode, "temperature").ifPresent(data::setTemperature);
                 JsonParserUtil.parseDouble(rootNode, "wetness").ifPresent(data::setWetness);
                 JsonParserUtil.parseDouble(rootNode, "windspeed").ifPresent(data::setWindspeed);
@@ -324,12 +368,27 @@ public class MqttMessageListener implements MqttCallback {
 
             // 检查告警条件
             try {
-                alertService.checkEnvironmentDataAndAlert(
-                    device.getDeviceCode(),
-                    savedData.getBattery(),
-                    device.getId(),
-                    device.getCompany().getId()
-                );
+                // CPM上升率告警（环境设备）
+                if (savedData.getCpm() != null) {
+                    alertService.checkRadiationDataAndAlert(
+                        device.getDeviceCode(),
+                        savedData.getCpm(),
+                        "ENVIRONMENT",  // 环境设备类型
+                        device.getId(),
+                        device.getCompany().getId()
+                    );
+                }
+
+                // 电压告警（环境设备）
+                if (savedData.getBattery() != null) {
+                    alertService.checkEnvironmentDataAndAlert(
+                        device.getDeviceCode(),
+                        savedData.getBattery(),
+                        "ENVIRONMENT",  // 环境设备类型
+                        device.getId(),
+                        device.getCompany().getId()
+                    );
+                }
             } catch (Exception e) {
                 log.warn("⚠️ 环境数据告警检查失败: {}", e.getMessage());
             }
