@@ -590,7 +590,7 @@ onBeforeUnmount(() => {
 .main-content {
   flex: 1;
   display: grid;
-  grid-template-columns: 320px 1fr 320px;
+  grid-template-columns: 320px 1fr 480px;
   gap: 16px;
   min-height: 0;
 }

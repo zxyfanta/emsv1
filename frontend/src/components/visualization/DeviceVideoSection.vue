@@ -122,8 +122,8 @@ const handleVideoClick = (device) => {
 
 .video-cards-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
 }
 
 .empty-state {
