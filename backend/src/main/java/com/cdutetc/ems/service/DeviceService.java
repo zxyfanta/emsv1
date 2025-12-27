@@ -29,6 +29,7 @@ public class DeviceService {
     private final DeviceRepository deviceRepository;
     private final CompanyRepository companyRepository;
     private final DeviceActivationCodeRepository activationCodeRepository;
+    private final DeviceReportConfigCacheService cacheService;
 
     /**
      * 创建设备
@@ -97,7 +98,48 @@ public class DeviceService {
             log.debug("Updated positionY to: {}", device.getPositionY());
         }
 
+        // 更新辐射设备上报专用字段
+        if (device.getNuclide() != null) {
+            existingDevice.setNuclide(device.getNuclide());
+        }
+        if (device.getInspectionMachineNumber() != null) {
+            existingDevice.setInspectionMachineNumber(device.getInspectionMachineNumber());
+        }
+        if (device.getSourceNumber() != null) {
+            existingDevice.setSourceNumber(device.getSourceNumber());
+        }
+        if (device.getSourceType() != null) {
+            existingDevice.setSourceType(device.getSourceType());
+        }
+        if (device.getOriginalActivity() != null) {
+            existingDevice.setOriginalActivity(device.getOriginalActivity());
+        }
+        if (device.getCurrentActivity() != null) {
+            existingDevice.setCurrentActivity(device.getCurrentActivity());
+        }
+        if (device.getSourceProductionDate() != null) {
+            existingDevice.setSourceProductionDate(device.getSourceProductionDate());
+        }
+
+        // 更新上报配置
+        if (device.getDataReportEnabled() != null) {
+            existingDevice.setDataReportEnabled(device.getDataReportEnabled());
+        }
+        if (device.getReportProtocol() != null) {
+            existingDevice.setReportProtocol(device.getReportProtocol());
+        }
+        if (device.getGpsPriority() != null) {
+            existingDevice.setGpsPriority(device.getGpsPriority());
+        }
+
         Device updatedDevice = deviceRepository.save(existingDevice);
+
+        // 清除 Redis 缓存（只针对辐射设备）
+        if (updatedDevice.getDeviceType() == DeviceType.RADIATION_MONITOR) {
+            cacheService.evictReportConfig(updatedDevice.getDeviceCode());
+            log.debug("已清除设备上报配置缓存: deviceCode={}", updatedDevice.getDeviceCode());
+        }
+
         log.info("Device updated successfully: {} with ID: {}, position: ({}, {})",
             updatedDevice.getDeviceCode(), updatedDevice.getId(),
             updatedDevice.getPositionX(), updatedDevice.getPositionY());

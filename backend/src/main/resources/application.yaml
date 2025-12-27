@@ -133,3 +133,35 @@ app:
         environment-threshold: ${EMS_ALERT_ENVIRONMENT_VOLTAGE:11.1}   # 环境设备电压阈值：3.7 * 3 = 11.1V
       offline-timeout:
         timeout-minutes: 10         # 10分钟无数据视为离线
+
+    # 数据上报配置
+    data-report:
+      # 四川上报配置（HTTP + SM2加密）
+      sichuan:
+        url: ${EMS_REPORT_SICHUAN_URL:http://59.225.208.12:18085/access/data/report}
+        api-key: ${EMS_REPORT_SICHUAN_API_KEY:AK-9lKIK7RZrHxPsxq9eYzb2BWBCq8WeSwIPC2e}
+        enabled: ${EMS_REPORT_SICHUAN_ENABLED:true}
+        sm2-public-key: ${EMS_REPORT_SICHUAN_SM2_PUBLIC_KEY:}
+        connect-timeout: 10000      # 连接超时10秒
+        read-timeout: 30000         # 读取超时30秒
+        max-retries: 3              # 最大重试3次
+        retry-interval: 5000        # 重试间隔5秒
+
+      # 山东上报配置（TCP + HJ/T212-2005）
+      shandong:
+        host: ${EMS_REPORT_SHANDONG_HOST:117.73.252.128}
+        port: ${EMS_REPORT_SHANDONG_PORT:8091}
+        enabled: ${EMS_REPORT_SHANDONG_ENABLED:true}
+        password: ${EMS_REPORT_SHANDONG_PASSWORD:123456}
+        connect-timeout: 10000      # 连接超时10秒
+        so-timeout: 30000           # socket超时30秒
+        heartbeat-interval: 60000   # 心跳间隔60秒
+        auto-reconnect: true        # 自动重连
+        reconnect-interval: 10000   # 重连间隔10秒
+
+      # 异步上报线程池配置
+      async:
+        core-pool-size: 5           # 核心线程数
+        max-pool-size: 10           # 最大线程数
+        queue-capacity: 100         # 队列容量
+        thread-name-prefix: data-report-  # 线程名前缀

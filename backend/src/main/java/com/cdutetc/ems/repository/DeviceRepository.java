@@ -195,4 +195,10 @@ public interface DeviceRepository extends JpaRepository<Device, Long> {
     long countByCompanyIdAndActivationStatus(
             @Param("companyId") Long companyId,
             @Param("activationStatus") DeviceActivationStatus activationStatus);
+
+    /**
+     * 查询启用了数据上报的指定类型设备
+     * 用于预热缓存
+     */
+    List<Device> findByDeviceTypeAndDataReportEnabledTrue(DeviceType deviceType);
 }

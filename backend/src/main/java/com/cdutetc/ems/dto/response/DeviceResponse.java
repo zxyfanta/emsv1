@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
@@ -37,6 +38,25 @@ public class DeviceResponse {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
+    // ==================== 辐射设备上报专用字段 ====================
+    private String nuclide;
+    private String inspectionMachineNumber;
+    private String sourceNumber;
+    private String sourceType;
+    private String originalActivity;
+    private String currentActivity;
+    private LocalDate sourceProductionDate;
+
+    // ==================== 数据上报配置字段 ====================
+    private Boolean dataReportEnabled;
+    private String reportProtocol;
+    private String gpsPriority;
+    private LocalDateTime lastReportTime;
+    private String lastReportStatus;
+    private String lastReportError;
+    private Integer totalReportCount;
+    private Integer successReportCount;
+
     public static DeviceResponse fromDevice(Device device) {
         return DeviceResponse.builder()
                 .id(device.getId())
@@ -58,6 +78,23 @@ public class DeviceResponse {
                 .companyName(device.getCompany() != null ? device.getCompany().getCompanyName() : null)
                 .createdAt(device.getCreatedAt())
                 .updatedAt(device.getUpdatedAt())
+                // 辐射设备上报专用字段
+                .nuclide(device.getNuclide())
+                .inspectionMachineNumber(device.getInspectionMachineNumber())
+                .sourceNumber(device.getSourceNumber())
+                .sourceType(device.getSourceType())
+                .originalActivity(device.getOriginalActivity())
+                .currentActivity(device.getCurrentActivity())
+                .sourceProductionDate(device.getSourceProductionDate())
+                // 数据上报配置字段
+                .dataReportEnabled(device.getDataReportEnabled())
+                .reportProtocol(device.getReportProtocol())
+                .gpsPriority(device.getGpsPriority())
+                .lastReportTime(device.getLastReportTime())
+                .lastReportStatus(device.getLastReportStatus())
+                .lastReportError(device.getLastReportError())
+                .totalReportCount(device.getTotalReportCount())
+                .successReportCount(device.getSuccessReportCount())
                 .build();
     }
 }
