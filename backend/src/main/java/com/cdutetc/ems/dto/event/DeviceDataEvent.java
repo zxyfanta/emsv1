@@ -1,5 +1,6 @@
 package com.cdutetc.ems.dto.event;
 
+import com.cdutetc.ems.entity.RadiationDeviceData;
 import lombok.Getter;
 import java.time.LocalDateTime;
 
@@ -21,5 +22,15 @@ public class DeviceDataEvent {
         this.deviceType = deviceType;
         this.data = data;
         this.timestamp = LocalDateTime.now();
+    }
+
+    /**
+     * 获取辐射设备数据（仅当数据类型为 radiation-data 时有效）
+     */
+    public RadiationDeviceData getRadiationDeviceData() {
+        if ("radiation-data".equals(eventType) && data instanceof RadiationDeviceData) {
+            return (RadiationDeviceData) data;
+        }
+        return null;
     }
 }

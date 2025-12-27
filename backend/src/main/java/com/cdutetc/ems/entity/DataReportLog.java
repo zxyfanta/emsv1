@@ -2,7 +2,9 @@ package com.cdutetc.ems.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 /**
@@ -10,6 +12,8 @@ import lombok.NoArgsConstructor;
  * 记录设备上报的详细信息
  */
 @Data
+@EqualsAndHashCode(callSuper = true)
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
