@@ -148,6 +148,21 @@ const rules = {
   ]
 }
 
+const resetForm = () => {
+  form.value = {
+    deviceCode: '',
+    deviceName: '',
+    streamUrl: '',
+    streamType: 'RTSP',
+    snapshotUrl: '',
+    username: '',
+    password: '',
+    resolution: '',
+    fps: null
+  }
+  formRef.value?.clearValidate()
+}
+
 // 监听 videoDevice 变化，填充表单
 watch(() => props.videoDevice, (newVal) => {
   if (newVal) {
@@ -166,21 +181,6 @@ watch(() => props.videoDevice, (newVal) => {
     resetForm()
   }
 }, { immediate: true })
-
-const resetForm = () => {
-  form.value = {
-    deviceCode: '',
-    deviceName: '',
-    streamUrl: '',
-    streamType: 'RTSP',
-    snapshotUrl: '',
-    username: '',
-    password: '',
-    resolution: '',
-    fps: null
-  }
-  formRef.value?.clearValidate()
-}
 
 const handleSubmit = async () => {
   try {
