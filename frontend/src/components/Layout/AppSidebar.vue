@@ -6,7 +6,7 @@
     <el-menu
       :default-active="activeMenu"
       :collapse="appStore.sidebarCollapsed"
-      :unique-opened="false"
+      :unique-opened="true"
       router
       background-color="#304156"
       text-color="#bfcbd9"

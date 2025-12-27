@@ -133,7 +133,7 @@ export const userRoutes = [
     meta: {
       title: '企业信息',
       icon: 'OfficeBuilding',
-      category: '系统设置',
+      category: '个人设置',
       order: 30
     }
   },
@@ -145,8 +145,8 @@ export const userRoutes = [
     component: () => import('@/views/user/Settings.vue'),
     meta: {
       title: '个人设置',
-      icon: 'Setting',
-      category: '系统设置',
+      icon: 'User',
+      category: '个人设置',
       order: 31
     }
   },
@@ -216,7 +216,7 @@ export const adminRoutes = [
     }
   },
 
-  // 系统管理
+  // 组织管理
   {
     path: '/companies',
     name: 'CompanyList',
@@ -224,7 +224,7 @@ export const adminRoutes = [
     meta: {
       title: '企业管理',
       icon: 'OfficeBuilding',
-      category: '系统管理',
+      category: '组织管理',
       order: 30
     }
   },
@@ -253,7 +253,7 @@ export const adminRoutes = [
     meta: {
       title: '用户管理',
       icon: 'User',
-      category: '系统管理',
+      category: '组织管理',
       order: 31
     }
   },
@@ -310,13 +310,13 @@ export const menuCategories = [
     order: 20
   },
   {
-    key: '系统管理',
-    icon: 'Setting',
+    key: '组织管理',
+    icon: 'Management',
     order: 30
   },
   {
-    key: '系统设置',
-    icon: 'Setting',
+    key: '个人设置',
+    icon: 'User',
     order: 31
   }
 ]
