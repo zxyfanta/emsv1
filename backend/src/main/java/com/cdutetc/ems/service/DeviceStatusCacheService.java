@@ -303,4 +303,29 @@ public class DeviceStatusCacheService {
         }
         return null;
     }
+
+    // ==================== 告警去重方法 ====================
+
+    /**
+     * 获取设备上次CPM上升率告警时间
+     * 用于告警去重，避免频繁告警
+     */
+    public LocalDateTime getLastCpmRiseAlertTime(String deviceCode) {
+        String key = buildCacheKey(deviceCode);
+        String value = getStringValue(key, "lastCpmRiseAlertAt");
+        return value != null ? LocalDateTime.parse(value, ISO_FORMATTER) : null;
+    }
+
+    /**
+     * 更新设备上次CPM上升率告警时间
+     * 用于告警去重，记录本次告警时间
+     */
+    public void updateLastCpmRiseAlertTime(String deviceCode, LocalDateTime alertTime) {
+        String key = buildCacheKey(deviceCode);
+        redisTemplate.opsForHash().put(key, "lastCpmRiseAlertAt",
+            alertTime.format(ISO_FORMATTER));
+        redisTemplate.expire(key, CACHE_TTL_SECONDS, TimeUnit.SECONDS);
+
+        log.debug("更新CPM上升率告警时间: {} -> {}", deviceCode, alertTime);
+    }
 }

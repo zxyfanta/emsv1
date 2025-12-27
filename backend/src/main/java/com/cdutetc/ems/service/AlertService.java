@@ -1,5 +1,6 @@
 package com.cdutetc.ems.service;
 
+import com.cdutetc.ems.config.AlertProperties;
 import com.cdutetc.ems.dto.event.DeviceDataEvent;
 import com.cdutetc.ems.entity.Alert;
 import com.cdutetc.ems.entity.Company;
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 
@@ -34,11 +36,9 @@ public class AlertService {
     private final DeviceRepository deviceRepository;
     private final CompanyRepository companyRepository;
     private final SseEmitterService sseEmitterService;
+    private final AlertConfigService alertConfigService;
+    private final DeviceStatusCacheService deviceStatusCacheService;
     private final ObjectMapper objectMapper;
-
-    // 告警阈值配置
-    private static final double HIGH_CPM_THRESHOLD = 100.0;  // 高辐射值阈值
-    private static final double LOW_BATTERY_THRESHOLD = 3.5;  // 低电量阈值 (V)
 
     /**
      * 创建告警
@@ -112,41 +112,110 @@ public class AlertService {
     }
 
     /**
-     * 检查辐射数据并触发告警
-     * TODO: 实现CPM上升率检查逻辑
+     * 检查辐射数据并触发告警（CPM上升率检查）
      */
     public void checkRadiationDataAndAlert(String deviceCode, Double cpm, Long deviceId, Long companyId) {
-        // 暂时注释掉旧的HIGH_CPM检查逻辑
-        // 新的CPM上升率检查逻辑将在后续实现，需要配合缓存和配置服务
+        if (cpm == null) {
+            return;
+        }
 
-        // if (cpm != null && cpm > HIGH_CPM_THRESHOLD) {
-        //     createAlert(
-        //         AlertType.HIGH_CPM,
-        //         AlertSeverity.CRITICAL,
-        //         deviceCode,
-        //         deviceId,
-        //         companyId,
-        //         String.format("辐射值超标: 当前值 %.2f CPM，阈值 %d CPM", cpm, (int) HIGH_CPM_THRESHOLD),
-        //         Map.of("cpm", cpm, "threshold", HIGH_CPM_THRESHOLD)
-        //     );
-        // }
+        // 1. 获取CPM上升率配置
+        AlertProperties.CpmRise config = alertConfigService.getCpmRiseConfig();
+
+        // 2. 从缓存获取上次CPM值
+        Double lastCpm = deviceStatusCacheService.getLastCpm(deviceCode);
+
+        // 3. 首次启动或无历史数据，跳过
+        if (lastCpm == null) {
+            log.debug("设备{}首次记录CPM值: {}", deviceCode, cpm);
+            return;
+        }
+
+        // 4. 检查最小CPM基数（避免基数太小导致误报）
+        if (lastCpm < config.getMinCpm()) {
+            log.debug("设备{}上次CPM值{}低于最小基数{}，跳过检查",
+                      deviceCode, lastCpm, config.getMinCpm());
+            return;
+        }
+
+        // 5. 计算上升率
+        double riseRate = (cpm - lastCpm) / lastCpm;
+
+        // 6. 检查上升率是否超过阈值
+        if (riseRate <= config.getRisePercentage()) {
+            log.debug("设备{}CPM上升率{}%未超过阈值{}%",
+                      deviceCode, riseRate * 100, config.getRisePercentage() * 100);
+            return;
+        }
+
+        // 7. 检查告警去重（最小间隔，防止频繁告警）
+        LocalDateTime lastAlertTime = deviceStatusCacheService.getLastCpmRiseAlertTime(deviceCode);
+        if (lastAlertTime != null) {
+            long secondsSinceLastAlert = ChronoUnit.SECONDS.between(
+                lastAlertTime, LocalDateTime.now()
+            );
+            if (secondsSinceLastAlert < config.getMinInterval()) {
+                log.debug("设备{}距离上次告警仅{}秒，未超过最小间隔{}秒",
+                          deviceCode, secondsSinceLastAlert, config.getMinInterval());
+                return;
+            }
+        }
+
+        // 8. 触发CPM上升率告警
+        String message = String.format(
+            "辐射值突增: 从%.2f CPM上升至%.2f CPM（上升%.1f%%），超过阈值%.0f%%",
+            lastCpm, cpm, riseRate * 100, config.getRisePercentage() * 100
+        );
+
+        createAlert(
+            AlertType.CPM_RISE,
+            AlertSeverity.CRITICAL,
+            deviceCode,
+            deviceId,
+            companyId,
+            message,
+            Map.of(
+                "lastCpm", lastCpm,
+                "currentCpm", cpm,
+                "riseRate", riseRate,
+                "threshold", config.getRisePercentage()
+            )
+        );
+
+        // 9. 更新告警去重缓存
+        deviceStatusCacheService.updateLastCpmRiseAlertTime(deviceCode, LocalDateTime.now());
+
+        log.warn("⚠️ CPM上升率告警触发: deviceCode={}, riseRate={}%, lastCpm={}, currentCpm={}",
+                 deviceCode, String.format("%.1f", riseRate * 100),
+                 String.format("%.2f", lastCpm), String.format("%.2f", cpm));
     }
 
     /**
-     * 检查环境数据并触发告警
+     * 检查环境数据并触发告警（低电压检查）
      */
     public void checkEnvironmentDataAndAlert(String deviceCode, Double battery, Long deviceId, Long companyId) {
+        if (battery == null) {
+            return;
+        }
+
+        // 从配置服务读取低电压阈值
+        AlertProperties.LowBattery config = alertConfigService.getLowBatteryConfig();
+        double voltageThreshold = config.getVoltageThreshold();
+
         // 检查低电量
-        if (battery != null && battery < LOW_BATTERY_THRESHOLD) {
+        if (battery < voltageThreshold) {
             createAlert(
                 AlertType.LOW_BATTERY,
                 AlertSeverity.WARNING,
                 deviceCode,
                 deviceId,
                 companyId,
-                String.format("电量不足: 当前电压 %.2f V，阈值 %.1f V", battery, LOW_BATTERY_THRESHOLD),
-                Map.of("battery", battery, "threshold", LOW_BATTERY_THRESHOLD)
+                String.format("电量不足: 当前电压%.2f V，低于阈值%.1f V", battery, voltageThreshold),
+                Map.of("battery", battery, "threshold", voltageThreshold)
             );
+
+            log.warn("⚠️ 低电压告警触发: deviceCode={}, battery={}V, threshold={}V",
+                     deviceCode, String.format("%.2f", battery), voltageThreshold);
         }
     }
 
@@ -282,5 +351,27 @@ public class AlertService {
                     row -> (String) row[0],
                     row -> (Long) row[1]
                 ));
+    }
+
+    /**
+     * 解决设备的离线告警（设备重新上线时调用）
+     */
+    @Transactional
+    public void resolveOfflineAlerts(String deviceCode, Long deviceId) {
+        List<Alert> unresolvedAlerts = alertRepository.findByDeviceIdAndResolved(deviceId, false)
+                .stream()
+                .filter(alert -> AlertType.OFFLINE.getCode().equals(alert.getAlertType()))
+                .toList();
+
+        if (!unresolvedAlerts.isEmpty()) {
+            unresolvedAlerts.forEach(alert -> {
+                alert.setResolved(true);
+                alert.setResolvedAt(LocalDateTime.now());
+                alertRepository.save(alert);
+            });
+
+            log.info("✅ 设备{}重新上线，解决{}个离线告警",
+                     deviceCode, unresolvedAlerts.size());
+        }
     }
 }

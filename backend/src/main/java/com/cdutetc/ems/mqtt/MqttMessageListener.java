@@ -147,6 +147,13 @@ public class MqttMessageListener implements MqttCallback {
             deviceStatusCacheService.updateLastMessageTime(deviceCode, LocalDateTime.now());
             deviceStatusCacheService.updateStatus(deviceCode, "ONLINE");
 
+            // 如果设备之前离线，自动解决离线告警
+            try {
+                alertService.resolveOfflineAlerts(deviceCode, device.getId());
+            } catch (Exception e) {
+                log.warn("解决离线告警失败: deviceCode={}, error={}", deviceCode, e.getMessage());
+            }
+
             return device;
 
         } catch (Exception e) {

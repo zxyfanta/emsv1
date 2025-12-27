@@ -76,4 +76,23 @@ public interface AlertRepository extends JpaRepository<Alert, Long> {
      */
     @Query("SELECT a FROM Alert a WHERE a.company.id = :companyId ORDER BY a.createdAt DESC")
     List<Alert> findRecentAlerts(@Param("companyId") Long companyId, Pageable pageable);
+
+    /**
+     * 查找设备的指定类型未解决告警
+     */
+    @Query("SELECT a FROM Alert a WHERE a.device.id = :deviceId AND a.alertType = :alertType AND a.resolved = :resolved")
+    List<Alert> findByDeviceIdAndAlertTypeAndResolved(
+        @Param("deviceId") Long deviceId,
+        @Param("alertType") String alertType,
+        @Param("resolved") Boolean resolved
+    );
+
+    /**
+     * 查找设备的所有未解决告警
+     */
+    @Query("SELECT a FROM Alert a WHERE a.device.id = :deviceId AND a.resolved = :resolved ORDER BY a.createdAt DESC")
+    List<Alert> findByDeviceIdAndResolved(
+        @Param("deviceId") Long deviceId,
+        @Param("resolved") Boolean resolved
+    );
 }
