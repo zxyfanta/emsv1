@@ -18,7 +18,6 @@
           <p class="placeholder-hint">
             设备：{{ device?.deviceName }} ({{ device?.deviceCode }})
           </p>
-          <p class="placeholder-hint">状态：{{ device?.status === 'ONLINE' ? '在线' : '离线' }}</p>
           <el-alert
             type="info"
             :closable="false"
@@ -41,11 +40,6 @@
           <el-descriptions-item label="设备类型">
             <el-tag :type="device.deviceType === 'RADIATION_MONITOR' ? 'danger' : 'success'" size="small">
               {{ device.deviceType === 'RADIATION_MONITOR' ? '辐射监测设备' : '环境监测设备' }}
-            </el-tag>
-          </el-descriptions-item>
-          <el-descriptions-item label="设备状态">
-            <el-tag :type="device.status === 'ONLINE' ? 'success' : 'info'" size="small">
-              {{ device.status === 'ONLINE' ? '在线' : '离线' }}
             </el-tag>
           </el-descriptions-item>
           <el-descriptions-item label="安装位置" :span="2">

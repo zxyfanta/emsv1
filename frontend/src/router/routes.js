@@ -274,6 +274,19 @@ export const adminRoutes = [
       title: '编辑用户',
       hidden: true
     }
+  },
+
+  // 视频设备管理
+  {
+    path: '/video-devices',
+    name: 'VideoDeviceList',
+    component: () => import('@/views/video-devices/VideoDeviceList.vue'),
+    meta: {
+      title: '视频设备管理',
+      icon: 'VideoCamera',
+      category: '组织管理',
+      order: 32
+    }
   }
 ]
 

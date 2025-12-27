@@ -7,10 +7,6 @@
         :alt="device.deviceName"
         class="thumbnail-image"
       />
-      <!-- 在线状态标识 -->
-      <div :class="['status-badge', device.status === 'ONLINE' ? 'online' : 'offline']">
-        {{ device.status === 'ONLINE' ? '在线' : '离线' }}
-      </div>
       <!-- 设备类型标识 -->
       <div class="device-type-badge">
         <el-tag
@@ -96,26 +92,6 @@ const thumbnailUrl = computed(() => getMockSnapshotUrl(props.device.id))
 
 .video-card:hover .thumbnail-image {
   opacity: 1;
-}
-
-.status-badge {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.status-badge.online {
-  background: rgba(82, 196, 26, 0.9);
-  color: white;
-}
-
-.status-badge.offline {
-  background: rgba(255, 77, 79, 0.9);
-  color: white;
 }
 
 .device-type-badge {
