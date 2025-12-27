@@ -1,0 +1,90 @@
+放射源监控终端(080502--SC-MT)接口数据接入文档
+1.文档说明
+此文档适用于通过接口的方式进行数据接入，同时数据格式支持http的方式和212协议的方式。请注意token保存,后续所有http请求必须携带令牌。
+2.请求地址
+(1)HTTP请求地址
+http://59.225.208.12:18085/access/data/report?apiKey=AK-9lKIK7RZrHxPsxq9eYzb2BWBCq8WeSwIPC2e
+(2)212协议请求地址
+59.225.208.12:18086
+3.请求方式
+该接口支持HTTP POST请求。
+4.请求token
+AK-9lKIK7RZrHxPsxq9eYzb2BWBCq8WeSwIPC2e
+5.请求参数
+参数标识	参数类型	参数名称	参数说明	是否必须
+deviceCode	string	设备编码		是
+paramType	string	数据格式：212/HTTP	标识数据字段的格式，为空时默认HTTP	是
+dataType	string	数据类型	MIN:分钟数据 HOUR:小时数据 DAY:天数据 OTHER:其他数据。为空时默认HOUR	是
+timestamp	long	时间戳		是
+data	array	数据	数组中对象见 5.1 琐事	是
+5.1. paramType为HTTP时data中的字段说明
+参数标识	参数类型	参数名称	参数说明	是否必须
+dataTime	string	数据时间	所有数据都必须要有此字段,格式：yyyy-MM-dd HH:mm:ss	是
+dataStr	string	数据	当paramType为HTTP时，此字段为json格式字符串；当paramType为212时，此字段为212协议。
+具体说明见5.2；	是
+5.2. dataStr编码说明
+参数标识	参数类型	参数名称	参数说明	是否必须
+CODE	string	放射源编码		否
+Nuclide	string	核素名称		否
+GPS	int	GPS工作Flag		否
+Vbat	string	剩余电量		否
+LNG	string	纬度		否
+LAT	string	经度		否
+FSY	float	辐射值		否
+6.请求参数示例
+
+  {
+   "data":[
+      {
+         "dataStr":"{\"CODE\":\"abcd\",\"Nuclide\":\"abcd\",\"GPS\":1234,\"Vbat\":\"abcd\",\"LNG\":\"abcd\",\"LAT\":\"abcd\",\"FSY\":1234.223}",
+         "dataTime":"2025-08-05 17:43:26"
+      }
+   ],
+   "deviceCode":"TEST10001",
+   "paramType":"HOUR",
+   "signature":"db93fe67cd19225dca83589321e6ddb142e2d27debbb57ab851d8b9b85178d2f",
+   "timestamp":1754387006225
+}
+   
+7.请求加密
+http数据上报接口需进行SM2全局加密。
+7.1通过接口获取加密公钥，和认证字符串
+http://59.225.208.12:18085/system/openApi/getPublicKey
+7.2对上报接口报文加密
+## 公钥publicKey为上一步接口获取结果值
+SM2 sm2 = SmUtil.sm2(null, publicKey);
+## data为请求参数报文体的json字符串
+String encryptStr = sm2.encryptBase64(data, KeyType.PublicKey);
+
+7.3构建加密属性上报请求
+## 将第一步获取到的认证字符串放入http请求头里
+Map<String,String> headers = new HashMap<>();
+Headers.put(“X-key-ID”,authKey);
+
+参数标识	参数类型	参数名称	参数说明	是否必须
+data	string	加密报文体	请求体	是
+X-Key-ID	string	认证字符串	请求头	是
+
+8.返回参数
+该接口将返回一个JSON对象，包含以下字段：
+字段	类型	字段名	字段描述
+success	boolean	是否请求成功	
+statusCode	int	状态码	0成功，其他失败
+message	string	提示信息	
+其中，当statusCode为0时表示接收成功，否则表示失败。
+9.返回参数示例
+{
+　　"success": true,
+　　"statusCode": 0,
+    "message": "数据接收成功！"}
+
+10.文件上传
+如果有设备需要上传文件数据，则需先调用文件上传接口，将文件先发送到物联网平台。获取到返回的文件连接地址。再将地址设置到对应上传字段中。文件上传地址：
+http://59.225.208.12:18085/resource/sysfile/upload
+
+请求方式为post，form-data提交。
+参数标识	参数类型	参数名称	参数说明	是否必须
+file	file	文件	请求体	是
+
+备注：
+上述所有接口都需要携带令牌在请求链接参数里。可参考http请求示例地址。
