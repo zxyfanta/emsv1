@@ -114,6 +114,7 @@ public class ShandongDataReportService {
 
     /**
      * 构建 HJ/T212 数据对象
+     * 按照放射源监控设备协议文档要求，包含所有设备配置字段
      *
      * @param config 设备配置
      * @param data    设备数据
@@ -129,17 +130,18 @@ public class ShandongDataReportService {
         String latitude = determineLatitude(config, data);
 
         return HJT212ProtocolService.HJT212Data.builder()
-                // 污染物编号（固定值，根据实际情况调整）
-                .polId("101")  // 需要根据实际设备调整
-                // 数据时间
+                // 设备标识字段（设备配置静态数据）
+                .inspectionMachineNumber(config.getInspectionMachineNumber())
+                .sourceNumber(config.getSourceNumber())
+                .sourceType(config.getSourceType())
+                .originalActivity(config.getOriginalActivity())
+                .currentActivity(config.getCurrentActivity())
+                .sourceProductionDate(config.getSourceProductionDate())  // DeviceReportConfig已经是String格式
+                // 实时监测数据字段
                 .dataTime(formatDataTime(data.getRecordTime()))
-                // 辐射值（CPM）
                 .cpm(data.getCpm())
-                // 电压
                 .voltage(data.getBatvolt())
-                // GPS 标志
                 .gpsFlag(gpsFlag)
-                // 坐标
                 .longitude(longitude)
                 .latitude(latitude)
                 .build();

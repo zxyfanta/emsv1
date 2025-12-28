@@ -15,6 +15,7 @@ import org.springframework.web.client.RestTemplate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -33,6 +34,7 @@ public class SichuanDataReportService {
 
     /**
      * 上报数据到四川监管平台
+     * 按照接口文档要求构建完整的外层包装结构
      *
      * @param config 设备上报配置
      * @param data    辐射设备数据
@@ -45,12 +47,12 @@ public class SichuanDataReportService {
         try {
             log.info("📤 [四川] 开始上报: deviceCode={}", deviceCode);
 
-            // 1. 构建上报数据
-            Map<String, Object> reportData = buildReportData(config, data);
+            // 1. 构建完整的外层payload结构
+            Map<String, Object> payload = buildCompletePayload(config, data);
 
             // 2. 转换为 JSON
-            String jsonData = objectMapper.writeValueAsString(reportData);
-            log.debug("📦 上报数据: {}", jsonData);
+            String jsonData = objectMapper.writeValueAsString(payload);
+            log.debug("📦 完整上报数据: {}", jsonData);
 
             // 3. SM2 加密（如果配置了公钥）
             String encryptedData = jsonData;
@@ -63,16 +65,19 @@ public class SichuanDataReportService {
                 log.debug("🔒 数据已SM2加密");
             }
 
-            // 4. 构建 HTTP 请求
+            // 4. 构建 HTTP 请求（按照文档要求）
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.set("X-API-Key", properties.getSichuan().getApiKey());
+
+            // 注意：文档显示完整URL应该包含apiKey参数
+            String fullUrl = properties.getSichuan().getUrl() + "?apiKey=" + properties.getSichuan().getApiKey();
 
             HttpEntity<String> request = new HttpEntity<>(encryptedData, headers);
 
             // 5. 发送请求
             ResponseEntity<String> response = restTemplate.exchange(
-                    properties.getSichuan().getUrl(),
+                    fullUrl,
                     HttpMethod.POST,
                     request,
                     String.class
@@ -100,19 +105,46 @@ public class SichuanDataReportService {
     }
 
     /**
-     * 构建四川协议上报数据
+     * 构建完整的外层payload结构
+     * 按照接口文档第36-47行的要求
      *
      * @param config 设备配置
      * @param data    设备数据
-     * @return 上报数据 Map
+     * @return 完整的外层payload Map
      */
-    private Map<String, Object> buildReportData(DeviceReportConfig config, RadiationDeviceData data) {
-        Map<String, Object> reportData = new HashMap<>();
+    private Map<String, Object> buildCompletePayload(DeviceReportConfig config, RadiationDeviceData data) {
+        Map<String, Object> payload = new HashMap<>();
+
+        // 外层字段
+        payload.put("deviceCode", config.getDeviceCode());
+        payload.put("paramType", "HOUR");  // 固定为HOUR（小时粒度）
+        payload.put("dataType", "HOUR");
+        payload.put("timestamp", System.currentTimeMillis());
+
+        // 构建data数组
+        Map<String, String> dataItem = new HashMap<>();
+        dataItem.put("dataTime", formatDataTimeReadable(data.getRecordTime()));
+        dataItem.put("dataStr", buildDataStr(config, data));
+
+        payload.put("data", List.of(dataItem));
+
+        // TODO: 生成签名（文档要求但未提供具体算法）
+        // payload.put("signature", generateSignature(payload));
+
+        return payload;
+    }
+
+    /**
+     * 构建dataStr内容（JSON字符串）
+     * 按照接口文档要求
+     */
+    private String buildDataStr(DeviceReportConfig config, RadiationDeviceData data) {
+        Map<String, Object> dataStr = new HashMap<>();
 
         // 基本信息
-        reportData.put("CODE", config.getDeviceCode());
-        reportData.put("Nuclide", config.getNuclide());
-        reportData.put("GPS", determineGPS(config));
+        dataStr.put("CODE", config.getDeviceCode());
+        dataStr.put("Nuclide", config.getNuclide() != null ? config.getNuclide() : "Cs-137");
+        dataStr.put("GPS", determineGPS(config));
 
         // GPS 坐标（根据优先级选择）
         if ("BDS".equals(config.getGpsPriority()) || "BDS_THEN_LBS".equals(config.getGpsPriority())) {
@@ -122,25 +154,41 @@ public class SichuanDataReportService {
                     Double.parseDouble(data.getBdsLongitude()),
                     Double.parseDouble(data.getBdsLatitude())
                 );
-                reportData.put("LNG", coords.get("LNG"));
-                reportData.put("LAT", coords.get("LAT"));
+                dataStr.put("LNG", coords.get("LNG"));
+                dataStr.put("LAT", coords.get("LAT"));
             } else if ("BDS_THEN_LBS".equals(config.getGpsPriority())) {
                 // 北斗无效，使用基站
-                putLBSCoordinates(reportData, data);
+                putLBSCoordinates(dataStr, data);
             }
         } else {
             // 优先基站
-            putLBSCoordinates(reportData, data);
+            putLBSCoordinates(dataStr, data);
         }
 
-        // 辐射值和电压
-        reportData.put("FSY", data.getCpm() != null ? data.getCpm().intValue() : 0);
-        reportData.put("Vbat", data.getBatvolt() != null ? data.getBatvolt() : 0.0);
+        // 辐射值和电压（修复格式）
+        dataStr.put("FSY", data.getCpm() != null ? data.getCpm() : 0.0);
+        dataStr.put("Vbat", formatVoltage(data.getBatvolt()));
 
-        // 数据时间
-        reportData.put("DataTime", formatDataTime(data.getRecordTime()));
+        try {
+            return objectMapper.writeValueAsString(dataStr);
+        } catch (Exception e) {
+            log.error("❌ 构建dataStr JSON失败: {}", e.getMessage());
+            return "{}";
+        }
+    }
 
-        return reportData;
+    /**
+     * 添加基站坐标（用于dataStr）
+     */
+    private void putLBSCoordinates(Map<String, Object> dataStr, RadiationDeviceData data) {
+        if (data.getLbsLongitude() != null && data.getLbsLatitude() != null) {
+            Map<String, String> coords = formatCoordinate(
+                Double.parseDouble(data.getLbsLongitude()),
+                Double.parseDouble(data.getLbsLatitude())
+            );
+            dataStr.put("LNG", coords.get("LNG"));
+            dataStr.put("LAT", coords.get("LAT"));
+        }
     }
 
     /**
@@ -148,20 +196,6 @@ public class SichuanDataReportService {
      */
     private int determineGPS(DeviceReportConfig config) {
         return "BDS".equals(config.getGpsPriority()) ? 1 : 0;
-    }
-
-    /**
-     * 添加基站坐标
-     */
-    private void putLBSCoordinates(Map<String, Object> reportData, RadiationDeviceData data) {
-        if (data.getLbsLongitude() != null && data.getLbsLatitude() != null) {
-            Map<String, String> coords = formatCoordinate(
-                Double.parseDouble(data.getLbsLongitude()),
-                Double.parseDouble(data.getLbsLatitude())
-            );
-            reportData.put("LNG", coords.get("LNG"));
-            reportData.put("LAT", coords.get("LAT"));
-        }
     }
 
     /**
@@ -189,12 +223,26 @@ public class SichuanDataReportService {
     }
 
     /**
-     * 格式化数据时间
+     * 格式化电压（添加"V"单位）
+     * 输入：3.8（Double）
+     * 输出："3.8V"（String）
      */
-    private String formatDataTime(LocalDateTime dateTime) {
+    private String formatVoltage(Double voltage) {
+        if (voltage == null) {
+            return "0.0V";
+        }
+        return String.format("%.1fV", voltage);
+    }
+
+    /**
+     * 格式化数据时间为可读格式（四川协议要求）
+     * 输入：LocalDateTime
+     * 输出："yyyy-MM-dd HH:mm:ss"
+     */
+    private String formatDataTimeReadable(LocalDateTime dateTime) {
         if (dateTime == null) {
             dateTime = LocalDateTime.now();
         }
-        return dateTime.format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+        return dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
     }
 }
