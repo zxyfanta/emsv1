@@ -22,6 +22,7 @@ import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.MqttCallback;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.MqttToken;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -43,6 +44,7 @@ public class MqttMessageListener implements MqttCallback {
     private final DeviceStatusCacheService deviceStatusCacheService;
     private final ObjectMapper objectMapper;
     private final CpmConversionProperties cpmConversionProperties;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Override
     public void connectionLost(Throwable cause) {
@@ -243,9 +245,23 @@ public class MqttMessageListener implements MqttCallback {
                 deviceStatusCacheService.updateLastBattery(device.getDeviceCode(), savedData.getBatvolt());
             }
 
-            // SSE推送实时数据
+            // 发布DeviceDataEvent事件（用于数据上报）
             try {
                 DeviceDataEvent event = new DeviceDataEvent(
+                    "radiation-data",
+                    device.getDeviceCode(),
+                    "RADIATION_MONITOR",
+                    savedData  // 传递完整的RadiationDeviceData对象
+                );
+                applicationEventPublisher.publishEvent(event);
+                log.debug("📤 DeviceDataEvent发布成功: {}", device.getDeviceCode());
+            } catch (Exception e) {
+                log.warn("⚠️ 发布DeviceDataEvent失败: {}", e.getMessage());
+            }
+
+            // SSE推送实时数据（使用简化的Map格式）
+            try {
+                DeviceDataEvent sseEvent = new DeviceDataEvent(
                     "radiation-data",
                     device.getDeviceCode(),
                     "RADIATION_MONITOR",
@@ -255,7 +271,7 @@ public class MqttMessageListener implements MqttCallback {
                         "recordTime", savedData.getRecordTime().toString()
                     )
                 );
-                sseEmitterService.broadcastDeviceData(device.getCompany().getId(), event);
+                sseEmitterService.broadcastDeviceData(device.getCompany().getId(), sseEvent);
                 log.debug("📡 SSE推送辐射数据成功: {}", device.getDeviceCode());
             } catch (Exception e) {
                 log.warn("⚠️ SSE推送辐射数据失败: {}", e.getMessage());
