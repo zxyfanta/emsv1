@@ -149,8 +149,8 @@ app:
 
       # 山东上报配置（TCP + HJ/T212-2005）
       shandong:
-        host: ${EMS_REPORT_SHANDONG_HOST:117.73.252.128}
-        port: ${EMS_REPORT_SHANDONG_PORT:8091}
+        host: ${EMS_REPORT_SHANDONG_HOST:221.214.62.118}  # 新服务器地址
+        port: ${EMS_REPORT_SHANDONG_PORT:20050}            # 新端口
         enabled: ${EMS_REPORT_SHANDONG_ENABLED:true}
         password: ${EMS_REPORT_SHANDONG_PASSWORD:123456}
         connect-timeout: 10000      # 连接超时10秒
