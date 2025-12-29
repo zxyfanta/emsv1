@@ -28,13 +28,10 @@ public class RadiationDeviceDataResponse {
     private Integer trigger;
     private Integer multi;
     private Integer way;
-    private String bdsLongitude;
-    private String bdsLatitude;
-    private String bdsUtc;
-    private Integer bdsUseful;
-    private String lbsLongitude;
-    private String lbsLatitude;
-    private Integer lbsUseful;
+    private String gpsType;        // BDS 或 LBS
+    private String gpsLongitude;
+    private String gpsLatitude;
+    private String gpsUtc;
     private LocalDateTime recordTime;
 
     public static RadiationDeviceDataResponse fromRadiationDeviceData(RadiationDeviceData data) {
@@ -50,13 +47,10 @@ public class RadiationDeviceDataResponse {
                 .trigger(data.getDataTrigger())
                 .multi(data.getMulti())
                 .way(data.getWay())
-                .bdsLongitude(data.getBdsLongitude())
-                .bdsLatitude(data.getBdsLatitude())
-                .bdsUtc(data.getBdsUtc())
-                .bdsUseful(data.getBdsUseful())
-                .lbsLongitude(data.getLbsLongitude())
-                .lbsLatitude(data.getLbsLatitude())
-                .lbsUseful(data.getLbsUseful())
+                .gpsType(data.getGpsType())
+                .gpsLongitude(data.getGpsLongitude())
+                .gpsLatitude(data.getGpsLatitude())
+                .gpsUtc(data.getGpsUtc())
                 .recordTime(data.getRecordTime())
                 .build();
     }

@@ -363,12 +363,11 @@ public class DataInitializer implements CommandLineRunner {
             data.setDataTrigger(1);
             data.setMulti(1);
             data.setWay(1);
-            data.setBdsLongitude(String.valueOf(116.4074 + Math.random() * 0.01)); // 北京经纬度附近
-            data.setBdsLatitude(String.valueOf(39.9042 + Math.random() * 0.01));
-            data.setBdsUtc(recordTime.format(TIME_FORMATTER));
-            data.setLbsLongitude(String.valueOf(116.4074 + Math.random() * 0.01));
-            data.setLbsLatitude(String.valueOf(39.9042 + Math.random() * 0.01));
-            data.setLbsUseful(0); // 假设0表示LBS不可用
+            // 模拟GPS选择：假设BDS可用，使用北斗GPS
+            data.setGpsType("BDS");
+            data.setGpsLongitude(String.valueOf(116.4074 + Math.random() * 0.01)); // 北京经纬度附近
+            data.setGpsLatitude(String.valueOf(39.9042 + Math.random() * 0.01));
+            data.setGpsUtc(recordTime.format(TIME_FORMATTER));
 
             dataList.add(data);
         }

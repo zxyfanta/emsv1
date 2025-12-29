@@ -124,10 +124,8 @@ public class ShandongDataReportService {
             DeviceReportConfig config,
             RadiationDeviceData data) {
 
-        // 确定 GPS 标志和坐标
-        Integer gpsFlag = determineGPSFlag(config, data);
-        String longitude = determineLongitude(config, data);
-        String latitude = determineLatitude(config, data);
+        // GPS标志：根据gpsType判断（BDS=1, LBS=0）
+        Integer gpsFlag = "BDS".equals(data.getGpsType()) ? 1 : 0;
 
         return HJT212ProtocolService.HJT212Data.builder()
                 // 设备标识字段（设备配置静态数据）
@@ -142,84 +140,9 @@ public class ShandongDataReportService {
                 .cpm(data.getCpm())
                 .voltage(data.getBatvolt())
                 .gpsFlag(gpsFlag)
-                .longitude(longitude)
-                .latitude(latitude)
+                .longitude(data.getGpsLongitude())  // 直接使用统一的GPS字段
+                .latitude(data.getGpsLatitude())    // 直接使用统一的GPS字段
                 .build();
-    }
-
-    /**
-     * 确定 GPS 标志
-     */
-    private Integer determineGPSFlag(DeviceReportConfig config, RadiationDeviceData data) {
-        if ("BDS".equals(config.getGpsPriority())) {
-            // 优先北斗
-            if (data.getBdsLongitude() != null && data.getBdsLatitude() != null) {
-                return 1;  // 有效
-            }
-            return 0;  // 无效
-        } else {
-            // 优先基站
-            if (data.getLbsLongitude() != null && data.getLbsLatitude() != null) {
-                return 1;  // 有效
-            }
-            return 0;  // 无效
-        }
-    }
-
-    /**
-     * 确定经度
-     */
-    private String determineLongitude(DeviceReportConfig config, RadiationDeviceData data) {
-        if ("BDS".equals(config.getGpsPriority())) {
-            if (data.getBdsLongitude() != null) {
-                return formatCoordinateToHJT212(Double.parseDouble(data.getBdsLongitude()));
-            } else if (data.getLbsLongitude() != null) {
-                return formatCoordinateToHJT212(Double.parseDouble(data.getLbsLongitude()));
-            }
-        } else {
-            if (data.getLbsLongitude() != null) {
-                return formatCoordinateToHJT212(Double.parseDouble(data.getLbsLongitude()));
-            } else if (data.getBdsLongitude() != null) {
-                return formatCoordinateToHJT212(Double.parseDouble(data.getBdsLongitude()));
-            }
-        }
-        return null;
-    }
-
-    /**
-     * 确定纬度
-     */
-    private String determineLatitude(DeviceReportConfig config, RadiationDeviceData data) {
-        if ("BDS".equals(config.getGpsPriority())) {
-            if (data.getBdsLatitude() != null) {
-                return formatCoordinateToHJT212(Double.parseDouble(data.getBdsLatitude()));
-            } else if (data.getLbsLatitude() != null) {
-                return formatCoordinateToHJT212(Double.parseDouble(data.getLbsLatitude()));
-            }
-        } else {
-            if (data.getLbsLatitude() != null) {
-                return formatCoordinateToHJT212(Double.parseDouble(data.getLbsLatitude()));
-            } else if (data.getBdsLatitude() != null) {
-                return formatCoordinateToHJT212(Double.parseDouble(data.getBdsLatitude()));
-            }
-        }
-        return null;
-    }
-
-    /**
-     * 格式化坐标为 HJ/T212 格式
-     * 输入：度度格式（如 117.0090）
-     * 输出：度分格式（如 11700.5400）
-     */
-    private String formatCoordinateToHJT212(Double coordinate) {
-        if (coordinate == null) {
-            return null;
-        }
-
-        int degree = coordinate.intValue();
-        double minute = (coordinate - degree) * 60;
-
-        return String.format("%d%.4f", degree, minute);
     }
 
     /**

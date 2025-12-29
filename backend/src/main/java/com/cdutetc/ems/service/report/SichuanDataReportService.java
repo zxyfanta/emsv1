@@ -144,25 +144,16 @@ public class SichuanDataReportService {
         // 基本信息
         dataStr.put("CODE", config.getDeviceCode());
         dataStr.put("Nuclide", config.getNuclide() != null ? config.getNuclide() : "Cs-137");
-        dataStr.put("GPS", determineGPS(config));
 
-        // GPS 坐标（根据优先级选择）
-        if ("BDS".equals(config.getGpsPriority()) || "BDS_THEN_LBS".equals(config.getGpsPriority())) {
-            // 优先北斗
-            if (data.getBdsLongitude() != null && data.getBdsLatitude() != null) {
-                Map<String, String> coords = formatCoordinate(
-                    Double.parseDouble(data.getBdsLongitude()),
-                    Double.parseDouble(data.getBdsLatitude())
-                );
-                dataStr.put("LNG", coords.get("LNG"));
-                dataStr.put("LAT", coords.get("LAT"));
-            } else if ("BDS_THEN_LBS".equals(config.getGpsPriority())) {
-                // 北斗无效，使用基站
-                putLBSCoordinates(dataStr, data);
-            }
-        } else {
-            // 优先基站
-            putLBSCoordinates(dataStr, data);
+        // GPS标志：根据gpsType判断（BDS=1, LBS=0）
+        int gpsFlag = "BDS".equals(data.getGpsType()) ? 1 : 0;
+        dataStr.put("GPS", gpsFlag);
+
+        // GPS坐标（直接使用统一的GPS字段）
+        if (data.getGpsLongitude() != null && data.getGpsLatitude() != null) {
+            // GPS坐标已经是度分格式，直接使用
+            dataStr.put("LNG", data.getGpsLongitude());
+            dataStr.put("LAT", data.getGpsLatitude());
         }
 
         // 辐射值和电压（修复格式）
@@ -175,51 +166,6 @@ public class SichuanDataReportService {
             log.error("❌ 构建dataStr JSON失败: {}", e.getMessage());
             return "{}";
         }
-    }
-
-    /**
-     * 添加基站坐标（用于dataStr）
-     */
-    private void putLBSCoordinates(Map<String, Object> dataStr, RadiationDeviceData data) {
-        if (data.getLbsLongitude() != null && data.getLbsLatitude() != null) {
-            Map<String, String> coords = formatCoordinate(
-                Double.parseDouble(data.getLbsLongitude()),
-                Double.parseDouble(data.getLbsLatitude())
-            );
-            dataStr.put("LNG", coords.get("LNG"));
-            dataStr.put("LAT", coords.get("LAT"));
-        }
-    }
-
-    /**
-     * 确定 GPS 标志
-     */
-    private int determineGPS(DeviceReportConfig config) {
-        return "BDS".equals(config.getGpsPriority()) ? 1 : 0;
-    }
-
-    /**
-     * 格式化坐标为度分格式
-     * 输入：度度格式（如 117.0090）
-     * 输出：度分格式（如 11700.5400）
-     */
-    private Map<String, String> formatCoordinate(Double longitude, Double latitude) {
-        Map<String, String> result = new HashMap<>();
-
-        // 经度转换
-        int lngDegree = longitude.intValue();
-        double lngMinute = (longitude - lngDegree) * 60;
-        String lngFormatted = String.format("%d%.4f", lngDegree, lngMinute);
-
-        // 纬度转换
-        int latDegree = latitude.intValue();
-        double latMinute = (latitude - latDegree) * 60;
-        String latFormatted = String.format("%d%.4f", latDegree, latMinute);
-
-        result.put("LNG", lngFormatted);
-        result.put("LAT", latFormatted);
-
-        return result;
     }
 
     /**

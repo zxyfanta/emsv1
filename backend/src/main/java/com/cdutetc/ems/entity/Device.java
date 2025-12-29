@@ -186,15 +186,6 @@ public class Device extends BaseEntity {
     private String reportProtocol = "SICHUAN";
 
     /**
-     * GPS优先级
-     * BDS: 北斗优先
-     * LBS: 基站优先
-     * BDS_THEN_LBS: 北斗然后基站
-     */
-    @Column(name = "gps_priority", length = 20)
-    private String gpsPriority = "BDS";
-
-    /**
      * 最后上报时间
      */
     @Column(name = "last_report_time")

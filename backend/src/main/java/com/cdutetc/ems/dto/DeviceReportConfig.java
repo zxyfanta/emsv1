@@ -28,7 +28,6 @@ public class DeviceReportConfig {
     // 上报配置
     private Boolean dataReportEnabled;
     private String reportProtocol;
-    private String gpsPriority;
 
     /**
      * 从Device实体转换为DTO
@@ -52,7 +51,6 @@ public class DeviceReportConfig {
         // 上报配置
         config.setDataReportEnabled(device.getDataReportEnabled());
         config.setReportProtocol(device.getReportProtocol());
-        config.setGpsPriority(device.getGpsPriority());
 
         return config;
     }

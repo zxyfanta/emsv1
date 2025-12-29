@@ -211,20 +211,16 @@ public class MqttMessageListener implements MqttCallback {
                 JsonParserUtil.parseInt(rootNode, "multi").ifPresent(data::setMulti);
                 JsonParserUtil.parseInt(rootNode, "way").ifPresent(data::setWay);
 
-                // 解析BDS定位信息
-                JsonParserUtil.parseObject(rootNode, "BDS").ifPresent(bds -> {
-                    JsonParserUtil.parseString(bds, "longitude").ifPresent(data::setBdsLongitude);
-                    JsonParserUtil.parseString(bds, "latitude").ifPresent(data::setBdsLatitude);
-                    JsonParserUtil.parseString(bds, "UTC").ifPresent(data::setBdsUtc);
-                    JsonParserUtil.parseInt(bds, "useful").ifPresent(data::setBdsUseful);
-                });
-
-                // 解析LBS定位信息
-                JsonParserUtil.parseObject(rootNode, "LBS").ifPresent(lbs -> {
-                    JsonParserUtil.parseString(lbs, "longitude").ifPresent(data::setLbsLongitude);
-                    JsonParserUtil.parseString(lbs, "latitude").ifPresent(data::setLbsLatitude);
-                    JsonParserUtil.parseInt(lbs, "useful").ifPresent(data::setLbsUseful);
-                });
+                // GPS数据选择（根据useful字段自动选择BDS或LBS）
+                GpsData selectedGps = selectGpsData(rootNode);
+                if (selectedGps != null) {
+                    data.setGpsType(selectedGps.getType());
+                    data.setGpsLongitude(selectedGps.getLongitude());
+                    data.setGpsLatitude(selectedGps.getLatitude());
+                    data.setGpsUtc(selectedGps.getUtc());
+                    log.debug("📍 GPS选择: type={}, longitude={}, latitude={}",
+                        selectedGps.getType(), selectedGps.getLongitude(), selectedGps.getLatitude());
+                }
 
                 log.debug("✅ 辐射数据解析成功: CPM={}, Batvolt={}, time={}",
                     data.getCpm(), data.getBatvolt(), data.getTime());
@@ -425,5 +421,57 @@ public class MqttMessageListener implements MqttCallback {
         private String deviceCode;
         private String deviceType;
         private String originalTopic;
+    }
+
+    /**
+     * 根据useful字段选择GPS数据
+     * 优先级：BDS可用 → BDS；否则 → LBS
+     */
+    private GpsData selectGpsData(JsonNode rootNode) {
+        // 使用数组来存储解析结果，以便在lambda中修改
+        final String[] bdsData = new String[3]; // [longitude, latitude, utc]
+        final Integer[] bdsUseful = {0};
+        final String[] lbsData = new String[2]; // [longitude, latitude]
+
+        // 解析BDS数据
+        JsonParserUtil.parseObject(rootNode, "BDS").ifPresent(bds -> {
+            JsonParserUtil.parseString(bds, "longitude").ifPresent(v -> bdsData[0] = v);
+            JsonParserUtil.parseString(bds, "latitude").ifPresent(v -> bdsData[1] = v);
+            JsonParserUtil.parseString(bds, "UTC").ifPresent(v -> bdsData[2] = v);
+            JsonParserUtil.parseInt(bds, "useful").ifPresent(v -> bdsUseful[0] = v);
+        });
+
+        // 解析LBS数据
+        JsonParserUtil.parseObject(rootNode, "LBS").ifPresent(lbs -> {
+            JsonParserUtil.parseString(lbs, "longitude").ifPresent(v -> lbsData[0] = v);
+            JsonParserUtil.parseString(lbs, "latitude").ifPresent(v -> lbsData[1] = v);
+        });
+
+        // GPS选择逻辑
+        if (bdsUseful[0] != null && bdsUseful[0] == 1 && bdsData[0] != null && bdsData[1] != null) {
+            // BDS可用，使用北斗
+            log.debug("📍 GPS选择: BDS可用（useful=1），使用北斗GPS");
+            return new GpsData("BDS", bdsData[0], bdsData[1], bdsData[2]);
+        } else if (lbsData[0] != null && lbsData[1] != null) {
+            // BDS不可用，使用LBS
+            log.debug("📍 GPS选择: BDS不可用，使用基站GPS");
+            return new GpsData("LBS", lbsData[0], lbsData[1], null);
+        } else {
+            // 都不可用
+            log.warn("⚠️ GPS选择: BDS和LBS都不可用或数据缺失");
+            return null;
+        }
+    }
+
+    /**
+     * GPS数据内部类
+     */
+    @lombok.Data
+    @lombok.AllArgsConstructor
+    private static class GpsData {
+        private String type;      // BDS 或 LBS
+        private String longitude;
+        private String latitude;
+        private String utc;       // 仅BDS有
     }
 }

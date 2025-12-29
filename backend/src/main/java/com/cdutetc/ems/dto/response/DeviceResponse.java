@@ -50,7 +50,6 @@ public class DeviceResponse {
     // ==================== 数据上报配置字段 ====================
     private Boolean dataReportEnabled;
     private String reportProtocol;
-    private String gpsPriority;
     private LocalDateTime lastReportTime;
     private String lastReportStatus;
     private String lastReportError;
@@ -89,7 +88,6 @@ public class DeviceResponse {
                 // 数据上报配置字段
                 .dataReportEnabled(device.getDataReportEnabled())
                 .reportProtocol(device.getReportProtocol())
-                .gpsPriority(device.getGpsPriority())
                 .lastReportTime(device.getLastReportTime())
                 .lastReportStatus(device.getLastReportStatus())
                 .lastReportError(device.getLastReportError())

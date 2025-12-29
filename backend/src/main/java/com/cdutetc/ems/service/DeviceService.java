@@ -128,9 +128,6 @@ public class DeviceService {
         if (device.getReportProtocol() != null) {
             existingDevice.setReportProtocol(device.getReportProtocol());
         }
-        if (device.getGpsPriority() != null) {
-            existingDevice.setGpsPriority(device.getGpsPriority());
-        }
 
         Device updatedDevice = deviceRepository.save(existingDevice);
 

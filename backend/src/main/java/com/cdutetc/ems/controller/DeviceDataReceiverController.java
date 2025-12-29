@@ -99,13 +99,21 @@ public class DeviceDataReceiverController {
             data.setMulti(request.getMulti());
             data.setWay(request.getWay());
 
-            // 位置数据
-            data.setBdsLongitude(request.getBdsLongitude());
-            data.setBdsLatitude(request.getBdsLatitude());
-            data.setBdsUtc(request.getBdsUtc());
-            data.setLbsLongitude(request.getLbsLongitude());
-            data.setLbsLatitude(request.getLbsLatitude());
-            data.setLbsUseful(request.getLbsUseful());
+            // GPS数据选择（根据useful字段自动选择BDS或LBS）
+            if (request.getBdsUseful() != null && request.getBdsUseful() == 1
+                && request.getBdsLongitude() != null && request.getBdsLatitude() != null) {
+                // BDS可用，使用北斗
+                data.setGpsType("BDS");
+                data.setGpsLongitude(request.getBdsLongitude());
+                data.setGpsLatitude(request.getBdsLatitude());
+                data.setGpsUtc(request.getBdsUtc());
+            } else if (request.getLbsLongitude() != null && request.getLbsLatitude() != null) {
+                // BDS不可用，使用LBS
+                data.setGpsType("LBS");
+                data.setGpsLongitude(request.getLbsLongitude());
+                data.setGpsLatitude(request.getLbsLatitude());
+                data.setGpsUtc(null);
+            }
 
             RadiationDeviceData savedData = radiationDeviceDataService.save(data);
 

@@ -57,28 +57,18 @@ public class RadiationDeviceData extends BaseEntity {
     @Column(name = "way")
     private Integer way;
 
-    // BDS定位信息
-    @Column(name = "BDS_longitude", length = 50)
-    private String bdsLongitude;
+    // 统一的GPS字段（存储根据useful选择后的GPS数据）
+    @Column(name = "gps_longitude", length = 50)
+    private String gpsLongitude;
 
-    @Column(name = "BDS_latitude", length = 50)
-    private String bdsLatitude;
+    @Column(name = "gps_latitude", length = 50)
+    private String gpsLatitude;
 
-    @Column(name = "BDS_UTC", length = 50)
-    private String bdsUtc;
+    @Column(name = "gps_type", length = 20)
+    private String gpsType;  // BDS 或 LBS
 
-    @Column(name = "BDS_useful")
-    private Integer bdsUseful;
-
-    // LBS定位信息
-    @Column(name = "LBS_longitude", length = 50)
-    private String lbsLongitude;
-
-    @Column(name = "LBS_latitude", length = 50)
-    private String lbsLatitude;
-
-    @Column(name = "LBS_useful")
-    private Integer lbsUseful;
+    @Column(name = "gps_utc", length = 50)
+    private String gpsUtc;   // 仅BDS有值，LBS为null
 
     @CreationTimestamp
     @Column(name = "record_time", nullable = false, updatable = false)

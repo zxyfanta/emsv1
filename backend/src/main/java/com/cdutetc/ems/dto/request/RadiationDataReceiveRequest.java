@@ -47,6 +47,7 @@ public class RadiationDataReceiveRequest {
     private String bdsLongitude;
     private String bdsLatitude;
     private String bdsUtc;
+    private Integer bdsUseful;
 
     // LBS位置信息
     private String lbsLongitude;
