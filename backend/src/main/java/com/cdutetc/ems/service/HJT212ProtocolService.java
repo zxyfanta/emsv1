@@ -32,7 +32,7 @@ public class HJT212ProtocolService {
             // 1. 构建数据段（包含所有设备配置字段）
             String dataSegment = buildDataSegment(mn, data);
 
-            // 2. 构建完整包
+            // 2. 构建完整包（按照HJ/T212-2005协议标准格式）
             // ST=61: 现场机编号（放射源监控设备）
             // CN=3051: 实时数据上报命令
             String packet = String.format("QN=%s;ST=61;CN=3051;PW=%s;CP=&&%s&&",
@@ -40,13 +40,20 @@ public class HJT212ProtocolService {
                     password,
                     dataSegment);
 
-            // 3. 计算 CRC 校验
+            // 3. 计算数据段长度（4位十进制）
+            // 修正：协议要求包含数据段长度字段
+            String dataLength = String.format("%04d", packet.length());
+
+            // 4. 计算 CRC 校验（对数据段进行校验）
             String crc = calculateCRC16(packet);
 
-            // 4. 添加包头包尾和校验码
-            String result = "##" + packet + crc + "\r\n";
+            // 5. 构建完整数据包：## + 长度 + 数据段 + CRC + \r\n
+            // 修正：添加了缺失的数据段长度字段
+            String result = "##" + dataLength + packet + crc + "\r\n";
 
-            log.debug("📦 构建HJ/T212实时数据包: MN={}, DataTime={}", mn, data.getDataTime());
+            log.debug("📦 构建HJ/T212实时数据包: MN={}, DataTime={}, 长度={}",
+                    mn, data.getDataTime(), result.length());
+            log.trace("数据包内容: {}", result);
             return result;
 
         } catch (Exception e) {
@@ -166,6 +173,7 @@ public class HJT212ProtocolService {
 
     /**
      * 解析应答包
+     * 支持标准文本格式和新服务器的二进制格式
      *
      * @param response 应答包
      * @return 是否成功
@@ -176,6 +184,26 @@ public class HJT212ProtocolService {
         }
 
         try {
+            // 尝试解析二进制格式（新服务器）
+            // 格式：CM + 状态码(1B) + 其他数据(6B)
+            if (response.length() >= 9 && response.startsWith("CM")) {
+                // 检查是否是二进制响应
+                byte[] bytes = response.getBytes(StandardCharsets.ISO_8859_1);
+
+                // 检查魔术字节 CM (0x434D)
+                if (bytes.length >= 3 && bytes[0] == 0x43 && bytes[1] == 0x4D) {
+                    int statusCode = bytes[2] & 0xFF; // 转换为无符号整数
+
+                    // 0x01 = 成功，0x8D = 失败，0x03 = 初始状态
+                    boolean success = (statusCode == 0x01);
+                    log.debug("📥 二进制响应: Magic=CM, Status=0x{}, 成功={}",
+                            String.format("%02X", statusCode), success);
+
+                    return success;
+                }
+            }
+
+            // 解析标准文本格式（旧服务器）
             // 去除包头包尾
             String content = response.replace("##", "").replace("\r\n", "");
 
@@ -188,7 +216,7 @@ public class HJT212ProtocolService {
                         String st = part.substring(3);
                         // ST=91 表示成功，ST=92 表示失败
                         boolean success = "91".equals(st);
-                        log.debug("📥 HJ/T212应答: ST={}, 成功={}", st, success);
+                        log.debug("📥 文本响应: ST={}, 成功={}", st, success);
                         return success;
                     }
                 }
@@ -198,6 +226,45 @@ public class HJT212ProtocolService {
 
         } catch (Exception e) {
             log.warn("⚠️ 解析HJ/T212应答失败: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * 解析二进制应答包（新服务器专用）
+     * 格式：CM (2B) + Status (1B) + Data/Padding (6B)
+     *
+     * @param responseBytes 应答包字节数组
+     * @return 是否成功
+     */
+    public boolean parseBinaryResponse(byte[] responseBytes) {
+        if (responseBytes == null || responseBytes.length < 3) {
+            return false;
+        }
+
+        try {
+            // 检查魔术字节 CM (0x434D)
+            if (responseBytes[0] == 0x43 && responseBytes[1] == 0x4D) {
+                int statusCode = responseBytes[2] & 0xFF;
+
+                // 状态码含义
+                // 0x01 = 数据上传成功
+                // 0x03 = 初始连接状态
+                // 0x8D = 数据上传失败
+                boolean success = (statusCode == 0x01);
+
+                log.debug("📥 二进制响应解析: Status=0x{}, 成功={}, 长度={}",
+                        String.format("%02X", statusCode), success, responseBytes.length);
+
+                return success;
+            }
+
+            log.warn("⚠️ 无效的二进制响应: Magic={}",
+                    String.format("%02X%02X", responseBytes[0], responseBytes[1]));
+            return false;
+
+        } catch (Exception e) {
+            log.warn("⚠️ 解析二进制响应失败: {}", e.getMessage());
             return false;
         }
     }
