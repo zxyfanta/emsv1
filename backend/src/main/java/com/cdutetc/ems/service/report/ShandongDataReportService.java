@@ -10,9 +10,11 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
@@ -66,6 +68,43 @@ public class ShandongDataReportService {
                     properties.getShandong().getHost(),
                     properties.getShandong().getPort());
 
+            // ⭐ 重要：接收并忽略服务器的初始CM消息（不响应握手）
+            // 根据测试验证，新服务器(221.214.62.118:20050)会在连接后立即发送9字节二进制消息
+            // 格式: CM (2B) + Status (1B) + Data (6B)
+            // 正确做法：接收并忽略，直接发送数据包
+            try {
+                socket.setSoTimeout(1000); // 短超时读取初始消息
+                byte[] initialBuffer = new byte[1024];
+                int initialRead = socket.getInputStream().read(initialBuffer);
+
+                if (initialRead > 0) {
+                    // 提取实际接收到的字节数组
+                    byte[] actualData = new byte[initialRead];
+                    System.arraycopy(initialBuffer, 0, actualData, 0, initialRead);
+
+                    String hexResponse = bytesToHex(actualData);
+                    log.info("📥 [山东] 收到服务器初始消息: {} 字节, HEX={}",
+                        initialRead, hexResponse);
+
+                    // 检查是否是CM消息
+                    if (actualData.length >= 2 && actualData[0] == 0x43 && actualData[1] == 0x4D) {
+                        if (actualData.length >= 3) {
+                            int statusCode = actualData[2] & 0xFF;
+                            log.debug("📋 [山东] 初始消息解析: Magic=CM, Status=0x{}, 说明={}",
+                                String.format("%02X", statusCode),
+                                statusCode == 0x03 ? "初始连接状态" : "未知状态");
+                        }
+                        log.info("ℹ️ [山东] 策略: 忽略初始消息，不响应握手（符合协议测试结果）");
+                    }
+                } else {
+                    log.debug("ℹ️ [山东] 无初始消息（正常情况）");
+                }
+            } catch (java.net.SocketTimeoutException e) {
+                log.debug("ℹ️ [山东] 无初始消息（超时）");
+            } finally {
+                socket.setSoTimeout(properties.getShandong().getSoTimeout()); // 恢复原超时
+            }
+
             // 4. 发送数据
             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
             out.println(packet);
@@ -80,6 +119,17 @@ public class ShandongDataReportService {
 
             String response = in.readLine();
             long duration = System.currentTimeMillis() - startTime;
+
+            // ⭐ 改进：详细记录响应信息
+            if (response != null) {
+                byte[] responseBytes = response.getBytes(StandardCharsets.ISO_8859_1);
+                String hexResponse = bytesToHex(responseBytes);
+                log.info("📥 [山东] 服务器响应: length={}, hex={}, ascii={}",
+                    response.length(), hexResponse,
+                    response.length() < 100 ? response : response.substring(0, 100) + "...");
+            } else {
+                log.warn("⚠️ [山东] 服务器无响应");
+            }
 
             // 6. 处理应答
             boolean success = protocolService.parseResponse(response);
@@ -153,5 +203,27 @@ public class ShandongDataReportService {
             dateTime = LocalDateTime.now();
         }
         return dateTime.format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+    }
+
+    /**
+     * 字节数组转十六进制字符串
+     * 用于调试日志输出
+     *
+     * @param bytes 字节数组
+     * @return 十六进制字符串，如 "43 4D 03 02"
+     */
+    private String bytesToHex(byte[] bytes) {
+        if (bytes == null || bytes.length == 0) {
+            return "";
+        }
+
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < bytes.length; i++) {
+            sb.append(String.format("%02X", bytes[i] & 0xFF));
+            if (i < bytes.length - 1) {
+                sb.append(" ");
+            }
+        }
+        return sb.toString();
     }
 }
