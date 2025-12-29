@@ -100,6 +100,15 @@ export const userRoutes = [
       order: 11
     }
   },
+  {
+    path: '/devices/:id/report-logs',
+    name: 'DeviceReportLogs',
+    component: () => import('@/views/devices/DeviceReportLogList.vue'),
+    meta: {
+      title: '上报日志',
+      hidden: true
+    }
+  },
 
   // 数据查询
   {
@@ -162,6 +171,19 @@ export const userRoutes = [
       category: '数据查询',
       order: 22
     }
+  },
+
+  // 数据上报日志
+  {
+    path: '/data-report-logs',
+    name: 'DataReportLog',
+    component: () => import('@/views/data/DataReportLog.vue'),
+    meta: {
+      title: '上报日志',
+      icon: 'Document',
+      category: '数据查询',
+      order: 23
+    }
   }
 ]
 
@@ -209,7 +231,7 @@ export const adminRoutes = [
     name: 'BatchImportDevices',
     component: () => import('@/views/admin/BatchImportDevices.vue'),
     meta: {
-      title: '批量导入',
+      title: '设备导入',
       icon: 'Upload',
       category: '设备管理',
       order: 14

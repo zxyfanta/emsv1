@@ -5,10 +5,12 @@ import com.cdutetc.ems.dto.request.DeviceCreateRequest;
 import com.cdutetc.ems.dto.request.DeviceUpdateRequest;
 import com.cdutetc.ems.dto.request.VerifyActivationCodeRequest;
 import com.cdutetc.ems.dto.response.*;
+import com.cdutetc.ems.entity.DataReportLog;
 import com.cdutetc.ems.entity.Device;
 import com.cdutetc.ems.entity.User;
 import com.cdutetc.ems.entity.enums.DeviceStatus;
 import com.cdutetc.ems.entity.enums.DeviceType;
+import com.cdutetc.ems.repository.DataReportLogRepository;
 import com.cdutetc.ems.service.DeviceActivationService;
 import com.cdutetc.ems.service.DeviceService;
 import com.cdutetc.ems.util.ApiResponse;
@@ -37,6 +39,7 @@ public class DeviceController {
 
     private final DeviceService deviceService;
     private final DeviceActivationService deviceActivationService;
+    private final DataReportLogRepository dataReportLogRepository;
 
     /**
      * 创建设备
@@ -384,6 +387,43 @@ public class DeviceController {
             log.error("Error getting device activation code: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.error("获取激活码失败，请稍后重试"));
+        }
+    }
+
+    /**
+     * 获取设备上报日志
+     */
+    @GetMapping("/{id}/report-logs")
+    public ResponseEntity<Page<DataReportLog>> getDeviceReportLogs(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String reportProtocol,
+            @RequestParam(required = false) String status) {
+        try {
+            // 验证设备是否存在
+            Device device = deviceService.getDeviceById(id);
+            if (device == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            }
+
+            // 创建分页和排序
+            Sort sort = Sort.by(Sort.Direction.DESC, "reportTime");
+            Pageable pageable = PageRequest.of(page, size, sort);
+
+            // 根据条件查询
+            Page<DataReportLog> logs;
+            if (status != null && !status.isEmpty()) {
+                logs = dataReportLogRepository.findByDeviceIdAndStatus(id, status, pageable);
+            } else {
+                logs = dataReportLogRepository.findByDeviceId(id, pageable);
+            }
+
+            return ResponseEntity.ok(logs);
+
+        } catch (Exception e) {
+            log.error("Error getting device report logs: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 }

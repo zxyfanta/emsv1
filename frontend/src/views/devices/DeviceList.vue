@@ -9,10 +9,6 @@
               <el-icon><Plus /></el-icon>
               激活设备
             </el-button>
-            <el-button type="primary" @click="handleCreate" v-if="isAdmin">
-              <el-icon><Plus /></el-icon>
-              手动录入
-            </el-button>
           </div>
         </div>
       </template>
@@ -42,28 +38,62 @@
       </el-form>
 
       <el-table :data="tableData" v-loading="loading" stripe>
-        <el-table-column prop="deviceCode" label="设备编码" width="150" />
-        <el-table-column prop="deviceName" label="设备名称" width="180" />
-        <el-table-column prop="deviceType" label="设备类型" width="120">
+        <el-table-column prop="deviceCode" label="设备编码" width="120" />
+        <el-table-column prop="deviceName" label="设备名称" width="150" />
+        <el-table-column prop="deviceType" label="类型" width="100">
           <template #default="{ row }">
-            <el-tag v-if="row.deviceType === 'RADIATION_MONITOR'" type="warning">辐射监测仪</el-tag>
-            <el-tag v-else type="success">环境监测站</el-tag>
+            <el-tag :type="row.deviceType === 'RADIATION_MONITOR' ? 'danger' : 'success'">
+              {{ row.deviceType === 'RADIATION_MONITOR' ? '辐射' : '环境' }}
+            </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="status" label="状态" width="100">
+
+        <!-- 上报状态 -->
+        <el-table-column label="上报状态" width="80">
           <template #default="{ row }">
-            <el-tag :type="getStatusType(row.status)">{{ getStatusText(row.status) }}</el-tag>
+            <el-switch
+              v-model="row.dataReportEnabled"
+              @change="handleToggleReport(row)"
+              :loading="row.updating"
+            />
           </template>
         </el-table-column>
-        <el-table-column prop="location" label="位置" />
-        <el-table-column prop="lastOnlineAt" label="最后在线时间" width="180">
+
+        <el-table-column prop="reportProtocol" label="协议" width="80">
           <template #default="{ row }">
-            {{ formatDate(row.lastOnlineAt) }}
+            <el-tag v-if="row.reportProtocol" size="small">
+              {{ row.reportProtocol === 'SICHUAN' ? '四川' : '山东' }}
+            </el-tag>
+            <span v-else class="text-gray">-</span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="180" fixed="right">
+
+        <el-table-column prop="lastReportTime" label="最后上报" width="140">
           <template #default="{ row }">
-            <el-button link type="primary" @click="handleView(row)">查看</el-button>
+            {{ formatTime(row.lastReportTime) || '未上报' }}
+          </template>
+        </el-table-column>
+
+        <el-table-column label="成功率" width="100">
+          <template #default="{ row }">
+            <el-progress
+              v-if="row.totalReportCount > 0"
+              :percentage="calculateSuccessRate(row)"
+              :color="getSuccessRateColor(calculateSuccessRate(row))"
+              :stroke-width="8"
+            />
+            <span v-else class="text-gray">-</span>
+          </template>
+        </el-table-column>
+
+        <el-table-column label="操作" width="240" fixed="right">
+          <template #default="{ row }">
+            <el-button size="small" type="primary" @click="handleConfigReport(row)">
+              配置上报
+            </el-button>
+            <el-button size="small" @click="handleViewLog(row)">
+              日志
+            </el-button>
             <el-button link type="primary" @click="handleEdit(row)">编辑</el-button>
             <el-button link type="danger" @click="handleDelete(row)">删除</el-button>
           </template>
@@ -91,18 +121,26 @@
     >
       <DeviceDetailPanel v-if="selectedDevice" :device="selectedDevice" />
     </el-dialog>
+
+    <!-- 数据上报配置对话框 -->
+    <DeviceReportConfigDialog
+      v-model="reportConfigDialogVisible"
+      :device="selectedDevice"
+      @success="handleConfigSuccess"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { getDeviceList, deleteDevice as deleteDeviceApi } from '@/api/device'
+import { getDeviceList, deleteDevice as deleteDeviceApi, updateDevice } from '@/api/device'
 import { useUserStore } from '@/store/user'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 import DeviceDetailPanel from '@/components/visualization/DeviceDetailPanel.vue'
+import DeviceReportConfigDialog from './DeviceReportConfigDialog.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -112,6 +150,7 @@ const isAdmin = computed(() => userStore.isAdmin)
 const loading = ref(false)
 const tableData = ref([])
 const detailDialogVisible = ref(false)
+const reportConfigDialogVisible = ref(false)
 const selectedDevice = ref(null)
 
 const searchForm = reactive({
@@ -156,10 +195,6 @@ const handleReset = () => {
   searchForm.deviceType = ''
   searchForm.status = ''
   handleSearch()
-}
-
-const handleCreate = () => {
-  router.push('/devices/create')
 }
 
 const handleActivate = () => {
@@ -213,6 +248,56 @@ const getStatusText = (status) => {
 
 const formatDate = (date) => {
   return date ? dayjs(date).format('YYYY-MM-DD HH:mm:ss') : '-'
+}
+
+const formatTime = (date) => {
+  return date ? dayjs(date).format('YYYY-MM-DD HH:mm:ss') : null
+}
+
+// 计算上报成功率
+const calculateSuccessRate = (row) => {
+  if (!row.totalReportCount || row.totalReportCount === 0) return 0
+  return Math.round((row.successReportCount / row.totalReportCount) * 100)
+}
+
+// 获取成功率颜色
+const getSuccessRateColor = (rate) => {
+  if (rate >= 90) return '#67c23a'
+  if (rate >= 70) return '#e6a23c'
+  return '#f56c6c'
+}
+
+// 切换上报状态
+const handleToggleReport = async (row) => {
+  row.updating = true
+  try {
+    await updateDevice(row.id, {
+      dataReportEnabled: row.dataReportEnabled
+    })
+    ElMessage.success(row.dataReportEnabled ? '已启用数据上报' : '已禁用数据上报')
+  } catch (error) {
+    // 恢复开关状态
+    row.dataReportEnabled = !row.dataReportEnabled
+    ElMessage.error('操作失败')
+  } finally {
+    row.updating = false
+  }
+}
+
+// 配置上报
+const handleConfigReport = (row) => {
+  selectedDevice.value = row
+  reportConfigDialogVisible.value = true
+}
+
+// 查看日志
+const handleViewLog = (row) => {
+  router.push(`/devices/${row.id}/report-logs`)
+}
+
+// 配置成功回调
+const handleConfigSuccess = () => {
+  loadData()
 }
 
 onMounted(() => {

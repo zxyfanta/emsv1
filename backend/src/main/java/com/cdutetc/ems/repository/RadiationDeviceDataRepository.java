@@ -77,13 +77,13 @@ public interface RadiationDeviceDataRepository extends JpaRepository<RadiationDe
     /**
      * 查找有BDS定位信息的数据
      */
-    @Query("SELECT r FROM RadiationDeviceData r WHERE r.bdsUseful = 1")
+    @Query("SELECT r FROM RadiationDeviceData r WHERE r.gpsType = 'BDS' AND r.gpsLongitude IS NOT NULL AND r.gpsLatitude IS NOT NULL")
     Page<RadiationDeviceData> findWithBdsLocation(Pageable pageable);
 
     /**
      * 查找有LBS定位信息的数据
      */
-    @Query("SELECT r FROM RadiationDeviceData r WHERE r.lbsUseful = 1")
+    @Query("SELECT r FROM RadiationDeviceData r WHERE r.gpsType = 'LBS' AND r.gpsLongitude IS NOT NULL AND r.gpsLatitude IS NOT NULL")
     Page<RadiationDeviceData> findWithLbsLocation(Pageable pageable);
 
     /**

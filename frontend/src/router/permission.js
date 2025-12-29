@@ -53,21 +53,15 @@ export function setupPermissionGuard(router) {
         // 动态添加路由
         await setupRouter(userStore)
 
-        // 动态路由加载后，跳转到目标路由
-        // 如果访问的是根路径，重定向到 dashboard
-        if (to.path === '/') {
-          next('/dashboard')
-        } else {
-          next({ ...to, replace: true })
-        }
-        return
+        // 动态路由加载后，重新导航到目标路由
+        // 使用 replace: true 避免在浏览器历史记录中留下重复记录
+        return next({ ...to, replace: true })
       } catch (error) {
         console.error('❌ 获取用户信息或加载路由失败:', error)
         // 失败，清除token并跳转到登录页
         localStorage.removeItem('token')
         localStorage.removeItem('userInfo')
-        next('/login')
-        return
+        return next('/login')
       }
     }
 

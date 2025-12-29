@@ -53,3 +53,13 @@ export const getEnvironmentStatistics = (params) => {
     params
   })
 }
+
+// 获取设备上报日志
+export const getDeviceReportLogs = (deviceId, params) => {
+  return request({
+    url: `/devices/${deviceId}/report-logs`,
+    method: 'get',
+    params
+  })
+}
+

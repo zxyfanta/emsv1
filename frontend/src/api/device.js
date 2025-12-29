@@ -125,3 +125,31 @@ export const getDeviceActivationCode = (deviceId) => {
     method: 'get'
   })
 }
+
+// ============ 数据上报相关接口 ============
+
+// 获取设备上报日志
+export const getDeviceReportLogs = (deviceId, params) => {
+  return request({
+    url: `/devices/${deviceId}/report-logs`,
+    method: 'get',
+    params
+  })
+}
+
+// 获取系统上报配置（管理员专用）
+export const getSystemReportConfig = () => {
+  return request({
+    url: '/admin/system/report-config',
+    method: 'get'
+  })
+}
+
+// 更新系统上报配置（管理员专用）
+export const updateSystemReportConfig = (data) => {
+  return request({
+    url: '/admin/system/report-config',
+    method: 'put',
+    data
+  })
+}
