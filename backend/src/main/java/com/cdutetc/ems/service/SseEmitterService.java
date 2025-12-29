@@ -63,7 +63,7 @@ public class SseEmitterService {
         Map<String, Object> payload = new java.util.HashMap<>();
         payload.put("deviceCode", event.getDeviceCode());
         payload.put("deviceType", event.getDeviceType());
-        payload.put("timestamp", event.getTimestamp().toString());
+        payload.put("timestamp", event.getEventTime().toString());  // 使用 getEventTime() 替代 getTimestamp()
 
         // 将实际数据直接展开到顶层
         try {

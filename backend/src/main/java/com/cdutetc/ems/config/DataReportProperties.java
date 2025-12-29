@@ -81,12 +81,12 @@ public class DataReportProperties {
         /**
          * TCP服务器地址
          */
-        private String host = "117.73.252.128";
+        private String host = "221.214.62.118";
 
         /**
          * TCP服务器端口
          */
-        private int port = 8091;
+        private int port = 20050;
 
         /**
          * 是否启用山东上报

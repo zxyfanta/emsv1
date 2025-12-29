@@ -1,0 +1,118 @@
+[
+    {
+        "id": "shandong-protocol-test",
+        "type": "tab",
+        "label": "山东协议测试 - SIM卡号设备",
+        "disabled": false,
+        "info": "测试山东协议数据上报 - 使用真实SIM卡号"
+    },
+    {
+        "id": "mqtt-config-mosquitto",
+        "type": "mqtt-broker",
+        "name": "Mosquitto-Broker",
+        "broker": "mosquitto",
+        "port": "1883",
+        "clientid": "ems-shandong-tester",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "username": "",
+        "password": ""
+    },
+    {
+        "id": "inject-sim-device",
+        "type": "inject",
+        "z": "shandong-protocol-test",
+        "name": "SIM:865229085145869",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "60",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 3,
+        "topic": "ems/device/865229085145869/data/RADIATION",
+        "payload": "",
+        "payloadType": "date",
+        "x": 160,
+        "y": 100,
+        "wires": [
+            [
+                "function-sim-device"
+            ]
+        ]
+    },
+    {
+        "id": "function-sim-device",
+        "type": "function",
+        "z": "shandong-protocol-test",
+        "name": "生成SIM设备数据",
+        "func": "// 生成真实SIM卡号设备的辐射数据\nconst simCardNumber = '865229085145869';\nconst timestamp = new Date(msg.payload);\nconst timeStr = timestamp.toISOString().replace('T', ' ').substring(0, 19);\n\n// 模拟真实的辐射数据\nconst baseCPM = 45;\nconst cpmVariation = Math.sin(Date.now() / 60000) * 20;\nconst cpm = Math.floor(baseCPM + cpmVariation + (Math.random() - 0.5) * 15);\n\n// 模拟电池电压（单位：毫伏）\nconst batteryBase = 3989;\nconst batteryDrain = (Date.now() % 86400000) / 86400000 * 150;\nconst battery = Math.floor(batteryBase - batteryDrain + (Math.random() - 0.5) * 30);\n\n// GPS坐标（使用山东烟台坐标）\nconst data = {\n    src: 1,\n    msgtype: 1,\n    BDS: {\n        longitude: \"12102.1465\",  // 东经121度02.1465分\n        latitude: \"3740.5073\",    // 北纬37度40.5073分\n        useful: 1,                // GPS有效\n        UTC: timeStr\n    },\n    CPM: Math.max(20, Math.min(100, cpm)),\n    Batvolt: Math.max(3700, Math.min(4200, battery)),\n    trigger: 1,\n    multi: 1,\n    way: 1,\n    time: timeStr\n};\n\nreturn {\n    topic: `ems/device/${simCardNumber}/data/RADIATION`,\n    payload: JSON.stringify(data),\n    simCardNumber: simCardNumber,\n    deviceType: 'RADIATION',\n    timestamp: timeStr\n};",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 420,
+        "y": 100,
+        "wires": [
+            [
+                "mqtt-out",
+                "debug-sim-device"
+            ]
+        ]
+    },
+    {
+        "id": "mqtt-out",
+        "type": "mqtt out",
+        "z": "shandong-protocol-test",
+        "name": "发送到MQTT",
+        "topic": "",
+        "qos": "1",
+        "retain": "false",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "mqtt-config-mosquitto",
+        "x": 660,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "debug-sim-device",
+        "type": "debug",
+        "z": "shandong-protocol-test",
+        "name": "SIM设备数据",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 670,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "comment-test-info",
+        "type": "comment",
+        "z": "shandong-protocol-test",
+        "name": "山东协议测试配置\\n\\n设备信息:\\n- SIM卡号: 865229085145869\\n- 设备类型: 辐射设备(RADIATION)\\n- 发送间隔: 60秒\\n\\nMQTT主题:\\nems/device/865229085145869/data/RADIATION\\n\\n数据流程:\\n1. Node-RED → Mosquitto (MQTT)\\n2. Mosquitto → Backend (订阅)\\n3. Backend → Shandong Server (TCP)\\n\\n山东服务器:\\n- 地址: 221.214.62.118:20050\\n- 协议: TCP + HJ/T212-2005\\n\\n验证要点:\\n1. Node-RED调试面板查看数据\\n2. 后端日志查看CM消息处理\\n3. 后端日志查看上报结果\\n4. 确认服务器返回0x01(成功)",
+        "info": "",
+        "x": 150,
+        "y": 260,
+        "wires": []
+    }
+]

@@ -1,18 +1,16 @@
 package com.cdutetc.ems.listener;
 
 import com.cdutetc.ems.dto.event.DeviceDataEvent;
-import com.cdutetc.ems.entity.enums.DeviceType;
 import com.cdutetc.ems.service.report.DataReportRouterService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Async;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.event.TransactionPhase;
-import org.springframework.transaction.event.TransactionalEventListener;
 
 /**
  * 数据上报事件监听器
- * 监听设备数据接收事件，异步触发数据上报
+ * 监听设备数据接收事件，触发数据上报
+ * 修复：使用@EventListener替代@TransactionalEventListener，避免事务依赖问题
  */
 @Component
 @RequiredArgsConstructor
@@ -23,18 +21,20 @@ public class DataReportEventListener {
 
     /**
      * 监听设备数据接收事件
-     * 在事务提交后执行，确保数据已保存
+     * 使用@EventListener而非@TransactionalEventListener，因为：
+     * 1. MQTT监听器不在事务上下文中
+     * 2. 数据已通过@Transactional服务保存
+     * 3. reportAsync方法本身是异步的，有独立的错误处理
      *
      * @param event 设备数据事件
      */
-    @Async("reportExecutor")
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @EventListener(classes = DeviceDataEvent.class)
     public void handleDeviceDataReceivedEvent(DeviceDataEvent event) {
         try {
             String eventType = event.getEventType();
             String deviceType = event.getDeviceType();
 
-            log.debug("📨 收到设备数据事件: eventType={}, deviceType={}, deviceCode={}",
+            log.info("📨 收到设备数据事件: eventType={}, deviceType={}, deviceCode={}",
                     eventType, deviceType, event.getDeviceCode());
 
             // 只处理辐射设备数据
