@@ -11,6 +11,7 @@ import com.cdutetc.ems.service.AlertService;
 import com.cdutetc.ems.service.DeviceService;
 import com.cdutetc.ems.service.DeviceStatusCacheService;
 import com.cdutetc.ems.service.EnvironmentDeviceDataService;
+import com.cdutetc.ems.service.MonitoringDataBufferService;
 import com.cdutetc.ems.service.RadiationDeviceDataService;
 import com.cdutetc.ems.service.SseEmitterService;
 import com.cdutetc.ems.util.JsonParserUtil;
@@ -42,6 +43,7 @@ public class MqttMessageListener implements MqttCallback {
     private final SseEmitterService sseEmitterService;
     private final AlertService alertService;
     private final DeviceStatusCacheService deviceStatusCacheService;
+    private final MonitoringDataBufferService monitoringDataBufferService;  // 批量写入服务
     private final ObjectMapper objectMapper;
     private final CpmConversionProperties cpmConversionProperties;
     private final ApplicationEventPublisher applicationEventPublisher;
@@ -229,9 +231,10 @@ public class MqttMessageListener implements MqttCallback {
                 log.warn("⚠️ 解析辐射设备数据JSON失败，仅保存原始数据: {}", e.getMessage());
             }
 
-            // 保存数据
-            com.cdutetc.ems.entity.RadiationDeviceData savedData = radiationDeviceDataService.save(data);
-            log.info("💾 辐射设备数据已保存: {}", device.getDeviceCode());
+            // 保存数据到缓冲区(先写Redis,定时任务批量写MySQL)
+            monitoringDataBufferService.saveRadiationDataToBuffer(data);
+            com.cdutetc.ems.entity.RadiationDeviceData savedData = data;  // 使用data对象作为返回值
+            log.info("💾 辐射设备数据已写入缓冲区: {}", device.getDeviceCode());
 
             // 更新缓存：CPM值和电池电压
             if (savedData.getCpm() != null) {
@@ -349,9 +352,10 @@ public class MqttMessageListener implements MqttCallback {
                 log.warn("⚠️ 解析环境设备数据JSON失败，仅保存原始数据: {}", e.getMessage());
             }
 
-            // 保存数据
-            com.cdutetc.ems.entity.EnvironmentDeviceData savedData = environmentDeviceDataService.save(data);
-            log.info("💾 环境设备数据已保存: {}", device.getDeviceCode());
+            // 保存数据到缓冲区(先写Redis,定时任务批量写MySQL)
+            monitoringDataBufferService.saveEnvironmentDataToBuffer(data);
+            com.cdutetc.ems.entity.EnvironmentDeviceData savedData = data;  // 使用data对象作为返回值
+            log.info("💾 环境设备数据已写入缓冲区: {}", device.getDeviceCode());
 
             // 更新缓存：电池电压
             if (savedData.getBattery() != null) {

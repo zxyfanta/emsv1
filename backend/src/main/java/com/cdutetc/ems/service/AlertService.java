@@ -38,6 +38,7 @@ public class AlertService {
     private final SseEmitterService sseEmitterService;
     private final AlertConfigService alertConfigService;
     private final DeviceStatusCacheService deviceStatusCacheService;
+    private final AlertCacheService alertCacheService;
     private final ObjectMapper objectMapper;
 
     /**
@@ -323,23 +324,31 @@ public class AlertService {
 
     /**
      * 批量解决告警
+     * 优化: 使用批量保存saveAll()代替循环保存,提升性能
+     * 缓存: 解决告警后清除设备告警缓存
      */
     @Transactional
     public int resolveAlertsByDevice(Long deviceId, Long companyId) {
         List<Alert> alerts = alertRepository.findByDeviceId(deviceId);
-        int count = 0;
+        List<Alert> alertsToUpdate = new java.util.ArrayList<>();
 
         for (Alert alert : alerts) {
             if (!alert.getResolved() && alert.getCompany().getId().equals(companyId)) {
                 alert.setResolved(true);
                 alert.setResolvedAt(LocalDateTime.now());
-                alertRepository.save(alert);
-                count++;
+                alertsToUpdate.add(alert);
             }
         }
 
-        log.info("批量解决告警: deviceId={}, count={}", deviceId, count);
-        return count;
+        // 批量保存,提升性能
+        if (!alertsToUpdate.isEmpty()) {
+            alertRepository.saveAll(alertsToUpdate);
+            // 清除设备告警缓存
+            alertCacheService.evictDeviceAlerts(deviceId);
+        }
+
+        log.info("批量解决告警: deviceId={}, count={}", deviceId, alertsToUpdate.size());
+        return alertsToUpdate.size();
     }
 
     /**

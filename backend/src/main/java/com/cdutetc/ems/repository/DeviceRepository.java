@@ -201,4 +201,34 @@ public interface DeviceRepository extends JpaRepository<Device, Long> {
      * 用于预热缓存
      */
     List<Device> findByDeviceTypeAndDataReportEnabledTrue(DeviceType deviceType);
+
+    /**
+     * 一次性获取所有统计信息(替代多个COUNT查询)
+     * 使用GROUP BY聚合查询,减少数据库查询次数
+     *
+     * @param companyId 企业ID
+     * @return 统计信息投影接口
+     */
+    @Query("""
+        SELECT
+            d.status as status,
+            d.deviceType as deviceType,
+            d.activationStatus as activationStatus,
+            COUNT(*) as count
+        FROM Device d
+        WHERE d.company.id = :companyId
+        GROUP BY d.status, d.deviceType, d.activationStatus
+        """)
+    List<DeviceStatsProjection> getStatisticsGrouped(@Param("companyId") Long companyId);
+
+    /**
+     * 设备统计信息投影接口
+     * 用于接收GROUP BY聚合查询结果
+     */
+    interface DeviceStatsProjection {
+        String getStatus();
+        String getDeviceType();
+        String getActivationStatus();
+        Long getCount();
+    }
 }

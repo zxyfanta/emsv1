@@ -7,6 +7,8 @@ import com.cdutetc.ems.repository.DeviceRepository;
 import com.cdutetc.ems.repository.EnvironmentDeviceDataRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -32,7 +34,9 @@ public class EnvironmentDeviceDataService {
 
     /**
      * 保存环境监测数据（不限企业）
+     * 保存时清除统计缓存
      */
+    @CacheEvict(value = "envStats", allEntries = true)
     public EnvironmentDeviceData save(EnvironmentDeviceData data) {
         log.debug("Saving environment data for device: {}", data.getDeviceCode());
 
@@ -200,8 +204,11 @@ public class EnvironmentDeviceDataService {
 
     /**
      * 获取环境数据统计信息
+     * 使用缓存减少重复查询
      */
     @Transactional(readOnly = true)
+    @Cacheable(value = "envStats",
+               key = "#companyId + '-' + #startTime + '-' + #endTime")
     public Map<String, Object> getStatistics(Long companyId, LocalDateTime startTime, LocalDateTime endTime) {
         log.debug("Getting environment data statistics for company: {} between {} and {}", companyId, startTime, endTime);
 

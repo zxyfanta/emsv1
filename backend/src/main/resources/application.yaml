@@ -8,6 +8,15 @@ spring:
     driverClassName: com.mysql.cj.jdbc.Driver
     username: ems_user
     password: ems_pass
+    # Hikari连接池优化配置
+    hikari:
+      maximum-pool-size: 20        # 最大连接数(默认10)
+      minimum-idle: 5               # 最小空闲连接数(默认10)
+      connection-timeout: 30000    # 连接超时30秒(默认30秒)
+      idle-timeout: 600000         # 空闲连接超时10分钟(默认600000ms)
+      max-lifetime: 1800000        # 连接最大生命周期30分钟(默认1800000ms)
+      pool-name: EMSHikariCP       # 连接池名称
+      connection-test-query: SELECT 1  # 连接测试查询
 
   # H2数据库控制台配置（可选，用于开发调试）
   h2:

@@ -10,11 +10,13 @@ import com.cdutetc.ems.repository.DeviceActivationCodeRepository;
 import com.cdutetc.ems.repository.DeviceRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -30,6 +32,8 @@ public class DeviceService {
     private final CompanyRepository companyRepository;
     private final DeviceActivationCodeRepository activationCodeRepository;
     private final DeviceReportConfigCacheService cacheService;
+    private final DeviceCacheService deviceCacheService;
+    private final DeviceCacheSyncService deviceCacheSyncService;
 
     /**
      * 创建设备
@@ -131,6 +135,11 @@ public class DeviceService {
 
         Device updatedDevice = deviceRepository.save(existingDevice);
 
+        // 清除设备信息缓存（立即删除 + 延迟双删）
+        deviceCacheService.evictDevice(updatedDevice.getDeviceCode());
+        deviceCacheSyncService.evictDeviceWithDelay(updatedDevice.getDeviceCode());  // 延迟1秒再次删除
+        log.debug("已清除设备信息缓存（延迟双删）: deviceCode={}", updatedDevice.getDeviceCode());
+
         // 清除 Redis 缓存（只针对辐射设备）
         if (updatedDevice.getDeviceType() == DeviceType.RADIATION_MONITOR) {
             cacheService.evictReportConfig(updatedDevice.getDeviceCode());
@@ -151,9 +160,15 @@ public class DeviceService {
         log.debug("Deleting device with ID: {} for company: {}", id, companyId);
 
         Device device = getDevice(id, companyId);
+        String deviceCode = device.getDeviceCode();
+
         deviceRepository.delete(device);
 
-        log.info("Device deleted successfully: {} with ID: {}", device.getDeviceCode(), id);
+        // 清除设备信息缓存
+        deviceCacheService.evictDevice(deviceCode);
+        log.debug("已清除设备信息缓存: deviceCode={}", deviceCode);
+
+        log.info("Device deleted successfully: {} with ID: {}", deviceCode, id);
     }
 
     /**
@@ -211,6 +226,12 @@ public class DeviceService {
         }
 
         Device updatedDevice = deviceRepository.save(device);
+
+        // 清除设备状态缓存（立即删除 + 延迟双删）
+        deviceCacheService.evictDevice(updatedDevice.getDeviceCode());
+        deviceCacheSyncService.evictDeviceWithDelay(updatedDevice.getDeviceCode());  // 延迟1秒再次删除
+        log.debug("已清除设备状态缓存（延迟双删）: deviceCode={}", updatedDevice.getDeviceCode());
+
         log.info("Device status updated successfully: {} to {}", device.getDeviceCode(), status);
 
         return updatedDevice;
@@ -218,12 +239,13 @@ public class DeviceService {
 
     /**
      * 根据设备编码获取设备（不限企业）
+     * 使用DeviceCacheService缓存,减少数据库查询
      */
     @Transactional(readOnly = true)
     public Device findByDeviceCode(String deviceCode) {
         log.debug("Getting device by code: {}", deviceCode);
 
-        return deviceRepository.findByDeviceCode(deviceCode).orElse(null);
+        return deviceCacheService.getDevice(deviceCode);
     }
 
     /**
@@ -259,24 +281,64 @@ public class DeviceService {
 
     /**
      * 获取设备统计信息
+     * 使用聚合查询优化(7次查询→1次) + Spring Cache缓存
      */
     @Transactional(readOnly = true)
+    @Cacheable(value = "deviceStats", key = "#companyId")
     public DeviceStatistics getDeviceStatistics(Long companyId) {
         log.debug("Getting device statistics for company: {}", companyId);
 
-        long totalDevices = deviceRepository.countByCompanyId(companyId);
-        long onlineDevices = deviceRepository.countByCompanyIdAndStatus(companyId, DeviceStatus.ONLINE);
-        long offlineDevices = deviceRepository.countByCompanyIdAndStatus(companyId, DeviceStatus.OFFLINE);
-        long faultDevices = deviceRepository.countByCompanyIdAndStatus(companyId, DeviceStatus.FAULT);
-        long maintenanceDevices = deviceRepository.countByCompanyIdAndStatus(companyId, DeviceStatus.MAINTENANCE);
+        // 使用聚合查询一次性获取所有统计信息
+        List<DeviceRepository.DeviceStatsProjection> stats =
+            deviceRepository.getStatisticsGrouped(companyId);
 
-        long radiationDevices = deviceRepository.countByCompanyIdAndDeviceType(companyId, DeviceType.RADIATION_MONITOR);
-        long environmentDevices = deviceRepository.countByCompanyIdAndDeviceType(companyId, DeviceType.ENVIRONMENT_STATION);
+        // 初始化计数器
+        long totalDevices = 0;
+        long onlineDevices = 0;
+        long offlineDevices = 0;
+        long faultDevices = 0;
+        long maintenanceDevices = 0;
+        long radiationDevices = 0;
+        long environmentDevices = 0;
+        long pendingCount = 0;
+        long activatedCount = 0;
 
-        // 管理员统计：待激活、已激活、激活码数量
-        long pendingCount = deviceRepository.countByCompanyIdAndActivationStatus(companyId, DeviceActivationStatus.PENDING);
-        long activatedCount = deviceRepository.countByCompanyIdAndActivationStatus(companyId, DeviceActivationStatus.ACTIVE);
-        long activationCodeCount = activationCodeRepository.countByStatus(com.cdutetc.ems.entity.enums.ActivationCodeStatus.UNUSED);
+        // 解析聚合查询结果
+        for (DeviceRepository.DeviceStatsProjection stat : stats) {
+            long count = stat.getCount() != null ? stat.getCount() : 0;
+
+            // 累计总数
+            totalDevices += count;
+
+            // 按状态统计
+            if (DeviceStatus.ONLINE.name().equals(stat.getStatus())) {
+                onlineDevices += count;
+            } else if (DeviceStatus.OFFLINE.name().equals(stat.getStatus())) {
+                offlineDevices += count;
+            } else if (DeviceStatus.FAULT.name().equals(stat.getStatus())) {
+                faultDevices += count;
+            } else if (DeviceStatus.MAINTENANCE.name().equals(stat.getStatus())) {
+                maintenanceDevices += count;
+            }
+
+            // 按设备类型统计
+            if (DeviceType.RADIATION_MONITOR.name().equals(stat.getDeviceType())) {
+                radiationDevices += count;
+            } else if (DeviceType.ENVIRONMENT_STATION.name().equals(stat.getDeviceType())) {
+                environmentDevices += count;
+            }
+
+            // 按激活状态统计
+            if (DeviceActivationStatus.PENDING.name().equals(stat.getActivationStatus())) {
+                pendingCount += count;
+            } else if (DeviceActivationStatus.ACTIVE.name().equals(stat.getActivationStatus())) {
+                activatedCount += count;
+            }
+        }
+
+        // 激活码数量仍需单独查询
+        long activationCodeCount = activationCodeRepository.countByStatus(
+            com.cdutetc.ems.entity.enums.ActivationCodeStatus.UNUSED);
 
         return DeviceStatistics.builder()
                 .totalDevices(totalDevices)
