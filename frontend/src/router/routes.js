@@ -309,6 +309,19 @@ export const adminRoutes = [
       category: '设备管理',
       order: 15
     }
+  },
+
+  // 数据备份管理
+  {
+    path: '/backup',
+    name: 'BackupManagement',
+    component: () => import('@/views/backup/BackupManagement.vue'),
+    meta: {
+      title: '数据备份',
+      icon: 'FolderOpened',
+      category: '系统管理',
+      order: 40
+    }
   }
 ]
 
@@ -353,5 +366,10 @@ export const menuCategories = [
     key: '个人设置',
     icon: 'User',
     order: 31
+  },
+  {
+    key: '系统管理',
+    icon: 'Setting',
+    order: 40
   }
 ]

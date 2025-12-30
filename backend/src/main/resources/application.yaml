@@ -174,3 +174,70 @@ app:
         max-pool-size: 10           # 最大线程数
         queue-capacity: 100         # 队列容量
         thread-name-prefix: data-report-  # 线程名前缀
+
+    # ========================================
+    # 数据备份配置
+    # ========================================
+    backup:
+      # 是否启用备份功能
+      enabled: true
+
+      # 备份根目录
+      root-dir: /backup/ems
+
+      # 数据库配置（留空则使用应用数据源）
+      database:
+        name: ""
+        host: ""
+        port:
+        username: ""
+        password: ""
+
+      # 时序数据备份配置
+      timeseries:
+        enabled: true
+        retention-months: 6
+        tables:
+          - ems_radiation_device_data
+          - ems_environment_device_data
+        sub-dir: timeseries
+        file-prefix: timeseries_data
+
+      # 业务数据备份配置
+      business:
+        enabled: true
+        retention-months: 6
+        tables:
+          - alerts
+          - ems_data_report_log
+        sub-dir: business
+        file-prefix: business_data
+
+      # 系统配置数据备份配置
+      system:
+        enabled: true
+        keep-count: 2
+        tables:
+          - ems_company
+          - ems_user
+          - ems_device
+          - ems_device_activation_code
+          - video_devices
+        sub-dir: system
+        file-prefix: system_config
+
+      # 定时任务配置
+      scheduler:
+        # Cron表达式（默认：每月1号凌晨3点）
+        cron: "0 3 1 * *"
+        enabled: true
+
+      # 高级配置
+      advanced:
+        compress: true
+        compress-format: gzip
+        verify-before-delete: true
+        verbose-logging: true
+        mysql-connect-timeout: 30
+        mysqldump-path: ""
+        mysql-path: ""
